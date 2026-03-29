@@ -160,7 +160,7 @@ async def upload_csv(file: UploadFile = File(...)):
         print(f"[upload] Warning: Upload log failed: {e}")
 
     return {
-        "status":      "done",
+        "status":      "success",
         "filename":    file.filename,
         "rows":        row_count,
         "categorized": categorized_count,
