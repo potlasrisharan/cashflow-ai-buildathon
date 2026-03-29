@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
     OCR_SPACE_API_KEY: str
     APP_ENV: str = "development"
-    ALLOWED_ORIGINS: str = "http://localhost:8080,http://127.0.0.1:8080"
+    ALLOWED_ORIGINS: str = "*"
 
     @property
     def origins_list(self) -> list[str]:
