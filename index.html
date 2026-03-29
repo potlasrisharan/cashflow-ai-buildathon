@@ -2838,6 +2838,7 @@ function readTxnAmount(txn) {
 console.info(`[CashFlow AI] build=${FRONTEND_BUILD} host=${window.location.host} api=${API_BASE}`);
 
 let selectedFile = null;
+const CHART_REGISTRY = {};
 const C = {
   accent:  '#4F7CFF',
   success: '#22C55E',
@@ -2868,6 +2869,16 @@ const baseOpts = {
 
 const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
 const formatDate = (ds) => new Date(ds).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+
+function upsertChart(canvasId, config) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+  if (CHART_REGISTRY[canvasId]) {
+    CHART_REGISTRY[canvasId].destroy();
+  }
+  CHART_REGISTRY[canvasId] = new Chart(canvas, config);
+  return CHART_REGISTRY[canvasId];
+}
 
 async function fetchAPI(endpoint, method = 'GET', body = null) {
   try {
@@ -2945,7 +2956,7 @@ async function renderCharts() {
     const colors = [C.accent, C.danger, C.warning, C.success, C.purple, C.teal];
     
     if(document.getElementById('deptChart')) {
-      new Chart(document.getElementById('deptChart'), {
+      upsertChart('deptChart', {
         type: 'bar',
         data: { labels, datasets:[{label:'Spent', data, backgroundColor: colors, borderRadius:3, borderWidth:0}] },
         options:{...baseOpts,plugins:{...baseOpts.plugins,tooltip:{...baseOpts.plugins.tooltip, callbacks:{label:c=>formatCurrency(c.parsed.y)}}}}
@@ -2953,7 +2964,7 @@ async function renderCharts() {
     }
 
     if(document.getElementById('deptDistChart')) {
-      new Chart(document.getElementById('deptDistChart'),{
+      upsertChart('deptDistChart',{
         type:'doughnut',
         data:{ labels, datasets:[{data, backgroundColor:colors, borderWidth:0, hoverOffset:4}] },
         options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
@@ -2974,7 +2985,7 @@ async function renderCharts() {
     const colors = [C.purple, C.accent, C.success, C.warning, C.gray, C.teal, C.orange];
 
     if(document.getElementById('donutChart')) {
-      new Chart(document.getElementById('donutChart'), {
+      upsertChart('donutChart', {
         type: 'doughnut',
         data: { labels, datasets:[{ data, backgroundColor:colors, borderWidth:0, hoverOffset:4 }] },
         options: { responsive:true,maintainAspectRatio:false,cutout:'72%',
@@ -2985,7 +2996,7 @@ async function renderCharts() {
     }
 
     if(document.getElementById('catChart')) {
-      new Chart(document.getElementById('catChart'),{type:'bar',data:{
+      upsertChart('catChart',{type:'bar',data:{
         labels, datasets:[{data, backgroundColor:C.accent, borderRadius:3, borderWidth:0}]
       },options:{...baseOpts,indexAxis:'y',plugins:{...baseOpts.plugins,tooltip:{...baseOpts.plugins.tooltip,
         callbacks:{label:c=>formatCurrency(c.parsed.x)}
@@ -3003,7 +3014,7 @@ async function renderCharts() {
       : (trend.daily_total || []);
 
     if (dates.length) {
-      new Chart(document.getElementById('trendChart'), {
+      upsertChart('trendChart', {
         type: 'line',
         data: {
           labels: dates,
@@ -3022,7 +3033,7 @@ async function renderCharts() {
     const labels = rows.map(b => b.department);
     const budgetData = rows.map(b => b.amount ?? b.budget ?? 0);
     const actualData = rows.map(b => b.spent ?? 0);
-    new Chart(document.getElementById('budgetChart'), {
+    upsertChart('budgetChart', {
       type: 'bar',
       data: {
         labels,
@@ -3110,7 +3121,14 @@ async function renderDashboard() {
 }
 window.renderDashboard = renderDashboard;
 
-window.addEventListener('DOMContentLoaded', initDashboard);
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await initDashboard();
+  } catch (e) {
+    console.error('Initial dashboard load failed:', e);
+    showToast('Initial data load failed. Check API key and backend CORS settings.', 'warning');
+  }
+});
 
 // ══════════════════════════════════════════
 // AI CHAT
