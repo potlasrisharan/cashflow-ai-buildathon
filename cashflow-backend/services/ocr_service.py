@@ -53,7 +53,8 @@ async def extract_receipt_data(
     if not parsed_results:
         return {"raw_text": "", "vendor": None, "amount": None, "date": None, "line_items": []}
 
-    raw_text = " ".join(p.get("ParsedText", "") for p in parsed_results)
+    # Preserve line structure for downstream line-item/date parsing.
+    raw_text = "\n".join(p.get("ParsedText", "") for p in parsed_results)
 
     return _parse_receipt_text(raw_text)
 

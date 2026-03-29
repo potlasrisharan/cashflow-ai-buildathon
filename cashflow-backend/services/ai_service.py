@@ -4,12 +4,14 @@ Groq-powered AI service:
   - chat_with_ai(): Finance Q&A assistant
 """
 import json
+import logging
 import re
 from typing import Any
 from groq import AsyncGroq
 from config import settings
 
 client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+logger = logging.getLogger(__name__)
 
 CATEGORIES = [
     "Software", "Marketing", "Travel", "Office",
@@ -92,8 +94,8 @@ async def categorize_transactions(rows: list[dict]) -> list[dict[str, Any]]:
 
         return results[:len(rows)]
 
-    except Exception as e:
-        print(f"[ai_service] categorize_transactions error: {e}")
+    except Exception:
+        logger.exception("categorize_transactions failed")
         # Safe fallback
         return [
             {"category": "Other", "department": "Operations", "confidence": 0.70}
@@ -122,8 +124,8 @@ async def chat_with_ai(message: str, history: list[dict] | None = None) -> str:
             max_tokens=512,
         )
         return resp.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"[ai_service] chat_with_ai error: {e}")
+    except Exception:
+        logger.exception("chat_with_ai failed")
         return (
             "I'm having trouble connecting to the AI engine right now. "
             "Please check your Groq API key or try again in a moment."

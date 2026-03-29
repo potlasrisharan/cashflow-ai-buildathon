@@ -7,11 +7,13 @@ POST  /api/anomalies/scan          → Re-run anomaly detection on recent transa
 """
 from fastapi import APIRouter, Query, HTTPException, Path
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
+from uuid import UUID
 
 from db import supabase
 from services.anomaly_service import detect_anomalies
+from routes._validators import month_bounds
 
 router = APIRouter()
 
@@ -23,8 +25,8 @@ class ResolveBody(BaseModel):
 
 @router.get("")
 def list_anomalies(
-    status:   Optional[str] = Query(None, description="open|reviewed|resolved|dismissed"),
-    severity: Optional[str] = Query(None, description="critical|warning|info"),
+    status:   Optional[Literal["open", "reviewed", "resolved", "dismissed"]] = Query(None, description="open|reviewed|resolved|dismissed"),
+    severity: Optional[Literal["critical", "warning", "info"]] = Query(None, description="critical|warning|info"),
     page:     int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=200),
 ):
@@ -74,11 +76,11 @@ def list_anomalies(
 
 
 @router.get("/{anomaly_id}")
-def get_anomaly(anomaly_id: str = Path(...)):
+def get_anomaly(anomaly_id: UUID = Path(...)):
     resp = (
         supabase.table("anomalies")
         .select("*, transactions(*)")
-        .eq("id", anomaly_id)
+        .eq("id", str(anomaly_id))
         .single()
         .execute()
     )
@@ -88,7 +90,7 @@ def get_anomaly(anomaly_id: str = Path(...)):
 
 
 @router.patch("/{anomaly_id}/resolve")
-def resolve_anomaly(anomaly_id: str, body: ResolveBody):
+def resolve_anomaly(anomaly_id: UUID, body: ResolveBody):
     updates = {
         "status":      "resolved",
         "resolved_at": datetime.utcnow().isoformat(),
@@ -97,7 +99,7 @@ def resolve_anomaly(anomaly_id: str, body: ResolveBody):
     if body.note:
         updates["description"] = body.note
 
-    resp = supabase.table("anomalies").update(updates).eq("id", anomaly_id).execute()
+    resp = supabase.table("anomalies").update(updates).eq("id", str(anomaly_id)).execute()
     if not resp.data:
         raise HTTPException(status_code=404, detail="Anomaly not found")
 
@@ -110,11 +112,11 @@ def resolve_anomaly(anomaly_id: str, body: ResolveBody):
 
 
 @router.patch("/{anomaly_id}/dismiss")
-def dismiss_anomaly(anomaly_id: str):
+def dismiss_anomaly(anomaly_id: UUID):
     resp = (
         supabase.table("anomalies")
         .update({"status": "dismissed", "resolved_at": datetime.utcnow().isoformat()})
-        .eq("id", anomaly_id)
+        .eq("id", str(anomaly_id))
         .execute()
     )
     if not resp.data:
@@ -128,14 +130,13 @@ async def run_anomaly_scan(month: str = Query("2025-01")):
     Re-scan all transactions for a month and insert newly detected anomalies.
     Safe to run multiple times — checks for duplicates via transaction_id.
     """
-    y, m = int(month[:4]), int(month[5:])
-    next_m = f"{y}-{m+1:02d}" if m < 12 else f"{y+1}-01"
+    start, end = month_bounds(month)
 
     txn_resp = (
         supabase.table("transactions")
         .select("id,vendor,amount,department,category,date,has_receipt,payment_method")
-        .gte("date", f"{month}-01")
-        .lt("date", f"{next_m}-01")
+        .gte("date", start)
+        .lt("date", end)
         .execute()
     )
     txns = txn_resp.data or []

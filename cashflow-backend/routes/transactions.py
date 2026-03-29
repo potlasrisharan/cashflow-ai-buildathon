@@ -8,30 +8,33 @@ GET    /api/transactions/stats/by-category → Aggregated spend by category
 GET    /api/transactions/stats/by-dept     → Aggregated spend by dept
 """
 from fastapi import APIRouter, Query, HTTPException, Path
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
+from datetime import date
+from typing import Literal
 from db import supabase
-import uuid
+from uuid import UUID
+from routes._validators import month_bounds
 
 router = APIRouter()
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class TransactionCreate(BaseModel):
-    date: str                           # "YYYY-MM-DD"
-    vendor: str
-    category: str
-    department: str
-    amount: float
+    date: date
+    vendor: str = Field(..., min_length=1, max_length=200)
+    category: str = Field(..., min_length=1, max_length=80)
+    department: str = Field(..., min_length=1, max_length=80)
+    amount: float = Field(..., gt=0)
     payment_method: str = "Bank Transfer"
     invoice_no: Optional[str] = None
-    status: str = "pending"
+    status: Literal["paid", "pending", "flagged", "rejected"] = "pending"
     has_receipt: bool = False
     notes: Optional[str] = None
 
 
 class TransactionUpdate(BaseModel):
-    status: Optional[str] = None
+    status: Optional[Literal["paid", "pending", "flagged", "rejected"]] = None
     category: Optional[str] = None
     department: Optional[str] = None
     notes: Optional[str] = None
@@ -53,9 +56,8 @@ def list_transactions(
     q = supabase.table("transactions").select("*").order("date", desc=True)
 
     if month:
-        y, m = int(month[:4]), int(month[5:])
-        next_m = f"{y}-{m+1:02d}" if m < 12 else f"{y+1}-01"
-        q = q.gte("date", f"{month}-01").lt("date", f"{next_m}-01")
+        start, end = month_bounds(month)
+        q = q.gte("date", start).lt("date", end)
     if department:
         q = q.eq("department", department)
     if category:
@@ -79,7 +81,7 @@ def list_transactions(
 
 @router.post("", status_code=201)
 def create_transaction(body: TransactionCreate):
-    payload = body.model_dump()
+    payload = body.model_dump(mode="json")
     resp = supabase.table("transactions").insert(payload).execute()
     if not resp.data:
         raise HTTPException(status_code=500, detail="Failed to create transaction")
@@ -88,14 +90,13 @@ def create_transaction(body: TransactionCreate):
 
 @router.get("/stats/by-category")
 def stats_by_category(month: str = Query("2025-01")):
-    y, m = int(month[:4]), int(month[5:])
-    next_m = f"{y}-{m+1:02d}" if m < 12 else f"{y+1}-01"
+    start, end = month_bounds(month)
 
     resp = (
         supabase.table("transactions")
         .select("category,amount")
-        .gte("date", f"{month}-01")
-        .lt("date", f"{next_m}-01")
+        .gte("date", start)
+        .lt("date", end)
         .execute()
     )
     agg: dict[str, float] = {}
@@ -110,14 +111,13 @@ def stats_by_category(month: str = Query("2025-01")):
 
 @router.get("/stats/by-dept")
 def stats_by_dept(month: str = Query("2025-01")):
-    y, m = int(month[:4]), int(month[5:])
-    next_m = f"{y}-{m+1:02d}" if m < 12 else f"{y+1}-01"
+    start, end = month_bounds(month)
 
     resp = (
         supabase.table("transactions")
         .select("department,amount")
-        .gte("date", f"{month}-01")
-        .lt("date", f"{next_m}-01")
+        .gte("date", start)
+        .lt("date", end)
         .execute()
     )
     agg: dict[str, float] = {}
@@ -131,24 +131,24 @@ def stats_by_dept(month: str = Query("2025-01")):
 
 
 @router.get("/{txn_id}")
-def get_transaction(txn_id: str = Path(...)):
-    resp = supabase.table("transactions").select("*").eq("id", txn_id).single().execute()
+def get_transaction(txn_id: UUID = Path(...)):
+    resp = supabase.table("transactions").select("*").eq("id", str(txn_id)).single().execute()
     if not resp.data:
         raise HTTPException(status_code=404, detail="Transaction not found")
     return resp.data
 
 
 @router.patch("/{txn_id}")
-def update_transaction(txn_id: str, body: TransactionUpdate):
+def update_transaction(txn_id: UUID, body: TransactionUpdate):
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
-    resp = supabase.table("transactions").update(updates).eq("id", txn_id).execute()
+    resp = supabase.table("transactions").update(updates).eq("id", str(txn_id)).execute()
     if not resp.data:
         raise HTTPException(status_code=404, detail="Transaction not found")
     return resp.data[0]
 
 
 @router.delete("/{txn_id}", status_code=204)
-def delete_transaction(txn_id: str):
-    supabase.table("transactions").delete().eq("id", txn_id).execute()
+def delete_transaction(txn_id: UUID):
+    supabase.table("transactions").delete().eq("id", str(txn_id)).execute()

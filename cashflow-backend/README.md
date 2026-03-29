@@ -27,6 +27,7 @@ cp .env.example .env
 ```
 
 Edit `.env` with your 3 API keys (see below).
+Also set `API_KEY` and keep `AUTH_REQUIRED=true` for non-local environments.
 
 ### 2. Set up Supabase
 
@@ -51,6 +52,14 @@ uvicorn main:app --reload --port 8000
 
 Server runs at: **http://localhost:8000**  
 Interactive docs: **http://localhost:8000/docs**
+
+### Authentication
+
+All `/api/*` routes require API key auth (unless `AUTH_REQUIRED=false` in `.env`).
+Pass either:
+
+- `X-API-Key: <API_KEY>`
+- `Authorization: Bearer <API_KEY>`
 
 ---
 

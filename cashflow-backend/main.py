@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 
 from routes import summary, transactions, upload, anomalies, budgets, chat
+from security import require_api_key
 
 app = FastAPI(
     title="CashFlow AI",
@@ -15,19 +16,21 @@ app = FastAPI(
 # ── CORS ─────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.origins_list,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key"],
 )
 
 # ── Routers ───────────────────────────────────────────────────────────────────
-app.include_router(summary.router,      prefix="/api/summary",      tags=["Summary"])
-app.include_router(transactions.router, prefix="/api/transactions",  tags=["Transactions"])
-app.include_router(upload.router,       prefix="/api/upload",        tags=["Upload"])
-app.include_router(anomalies.router,    prefix="/api/anomalies",     tags=["Anomalies"])
-app.include_router(budgets.router,      prefix="/api/budgets",       tags=["Budgets"])
-app.include_router(chat.router,         prefix="/api/chat",          tags=["AI Chat"])
+api_dependencies = [Depends(require_api_key)]
+
+app.include_router(summary.router,      prefix="/api/summary",      tags=["Summary"], dependencies=api_dependencies)
+app.include_router(transactions.router, prefix="/api/transactions",  tags=["Transactions"], dependencies=api_dependencies)
+app.include_router(upload.router,       prefix="/api/upload",        tags=["Upload"], dependencies=api_dependencies)
+app.include_router(anomalies.router,    prefix="/api/anomalies",     tags=["Anomalies"], dependencies=api_dependencies)
+app.include_router(budgets.router,      prefix="/api/budgets",       tags=["Budgets"], dependencies=api_dependencies)
+app.include_router(chat.router,         prefix="/api/chat",          tags=["AI Chat"], dependencies=api_dependencies)
 
 
 @app.get("/", tags=["Health"])

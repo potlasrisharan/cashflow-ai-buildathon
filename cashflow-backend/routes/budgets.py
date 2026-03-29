@@ -5,22 +5,23 @@ POST /api/budgets                   → Set/upsert budget for a dept
 DELETE /api/budgets/{dept}/{month}  → Remove a budget entry
 """
 from fastapi import APIRouter, Query, HTTPException
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
 
 from db import supabase
+from routes._validators import month_bounds
 
 router = APIRouter()
 
 
 class BudgetSet(BaseModel):
-    department: str
-    month: str         # "YYYY-MM"
-    budget_amount: float
+    department: str = Field(..., min_length=1, max_length=80)
+    month: str
+    budget_amount: float = Field(..., gt=0)
 
 
 @router.get("")
 def get_budgets(month: str = Query("2025-01")):
+    month_bounds(month)
     resp = (
         supabase.table("budgets")
         .select("*")
@@ -34,8 +35,7 @@ def get_budgets(month: str = Query("2025-01")):
 @router.get("/utilization")
 def budget_utilization(month: str = Query("2025-01")):
     """Returns budget vs actual spend with utilization % per department."""
-    y, m = int(month[:4]), int(month[5:])
-    next_m = f"{y}-{m+1:02d}" if m < 12 else f"{y+1}-01"
+    start, end = month_bounds(month)
 
     budget_resp = (
         supabase.table("budgets")
@@ -46,8 +46,8 @@ def budget_utilization(month: str = Query("2025-01")):
     txn_resp = (
         supabase.table("transactions")
         .select("department,amount")
-        .gte("date", f"{month}-01")
-        .lt("date", f"{next_m}-01")
+        .gte("date", start)
+        .lt("date", end)
         .execute()
     )
 
@@ -99,6 +99,7 @@ def budget_utilization(month: str = Query("2025-01")):
 @router.post("", status_code=201)
 def set_budget(body: BudgetSet):
     """Upsert a department budget — updates if exists, inserts if new."""
+    month_bounds(body.month)
     resp = (
         supabase.table("budgets")
         .upsert({
@@ -115,4 +116,5 @@ def set_budget(body: BudgetSet):
 
 @router.delete("/{department}/{month}", status_code=204)
 def delete_budget(department: str, month: str):
+    month_bounds(month)
     supabase.table("budgets").delete().eq("department", department).eq("month", month).execute()

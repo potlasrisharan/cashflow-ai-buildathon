@@ -6,7 +6,7 @@ GET /api/summary/trend              → Daily spend trend line
 """
 from fastapi import APIRouter, Query
 from db import supabase
-from datetime import date
+from routes._validators import month_bounds
 
 router = APIRouter()
 
@@ -16,11 +16,7 @@ def get_dashboard_summary(month: str = Query("2025-01", description="Month in YY
     """Returns all KPI metrics for the dashboard header cards."""
 
     # ── All transactions for the month ────────────────────────
-    start = f"{month}-01"
-    # last day: next month minus 1 day
-    y, m = int(month[:4]), int(month[5:])
-    next_m = f"{y}-{m+1:02d}" if m < 12 else f"{y+1}-01"
-    end = f"{next_m}-01"
+    start, end = month_bounds(month)
 
     txn_resp = (
         supabase.table("transactions")
@@ -67,8 +63,6 @@ def get_dashboard_summary(month: str = Query("2025-01", description="Month in YY
         dept_spend[t["department"]] = dept_spend.get(t["department"], 0) + t["amount"]
 
     budget_by_dept: dict[str, float] = {}
-    for b in (budget_resp.data or []):
-        pass  # need dept-level; re-fetch
     budget_dept_resp = (
         supabase.table("budgets")
         .select("department,budget_amount")
@@ -109,14 +103,13 @@ def get_dashboard_summary(month: str = Query("2025-01", description="Month in YY
 @router.get("/spend-by-category")
 def spend_by_category(month: str = Query("2025-01")):
     """Returns spend aggregated by category — used for donut/bar charts."""
-    y, m = int(month[:4]), int(month[5:])
-    next_m = f"{y}-{m+1:02d}" if m < 12 else f"{y+1}-01"
+    start, end = month_bounds(month)
 
     resp = (
         supabase.table("transactions")
         .select("category,amount")
-        .gte("date", f"{month}-01")
-        .lt("date", f"{next_m}-01")
+        .gte("date", start)
+        .lt("date", end)
         .execute()
     )
     agg: dict[str, float] = {}
@@ -135,14 +128,13 @@ def spend_by_category(month: str = Query("2025-01")):
 @router.get("/spend-by-dept")
 def spend_by_dept(month: str = Query("2025-01")):
     """Returns spend + budget per department — used for grouped bar chart."""
-    y, m = int(month[:4]), int(month[5:])
-    next_m = f"{y}-{m+1:02d}" if m < 12 else f"{y+1}-01"
+    start, end = month_bounds(month)
 
     txn_resp = (
         supabase.table("transactions")
         .select("department,amount")
-        .gte("date", f"{month}-01")
-        .lt("date", f"{next_m}-01")
+        .gte("date", start)
+        .lt("date", end)
         .execute()
     )
     budget_resp = (
@@ -173,14 +165,13 @@ def spend_by_dept(month: str = Query("2025-01")):
 @router.get("/trend")
 def spend_trend(month: str = Query("2025-01")):
     """Returns daily cumulative and daily spend — used for trend line chart."""
-    y, m = int(month[:4]), int(month[5:])
-    next_m = f"{y}-{m+1:02d}" if m < 12 else f"{y+1}-01"
+    start, end = month_bounds(month)
 
     resp = (
         supabase.table("transactions")
         .select("date,amount,category")
-        .gte("date", f"{month}-01")
-        .lt("date", f"{next_m}-01")
+        .gte("date", start)
+        .lt("date", end)
         .order("date")
         .execute()
     )

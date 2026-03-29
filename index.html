@@ -2815,6 +2815,24 @@ function switchPage(page) {
 // API INTEGRATION & DATA HYDRATION
 // ══════════════════════════════════════════
 const API_BASE = 'https://cashflow-api-dedx.onrender.com/api';
+const API_KEY_STORAGE_KEY = 'cashflow_api_key';
+
+function getApiKey() {
+  return (localStorage.getItem(API_KEY_STORAGE_KEY) || '').trim();
+}
+
+function escapeHTML(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function readTxnAmount(txn) {
+  return Number(txn?.amount || 0);
+}
 
 let selectedFile = null;
 const C = {
@@ -2851,6 +2869,11 @@ const formatDate = (ds) => new Date(ds).toLocaleDateString('en-US', { month: 'sh
 async function fetchAPI(endpoint, method = 'GET', body = null) {
   try {
     const opts = { method, headers: {} };
+    const apiKey = getApiKey();
+    if (apiKey) {
+      opts.headers['X-API-Key'] = apiKey;
+      opts.headers['Authorization'] = `Bearer ${apiKey}`;
+    }
     if (body) {
       if (body instanceof FormData) {
         opts.body = body;
@@ -2863,7 +2886,10 @@ async function fetchAPI(endpoint, method = 'GET', body = null) {
     const res = await fetch(`${API_BASE}${endpoint}`, opts);
     let data;
     try { data = await res.json(); } catch(e) { data = null; }
-    
+
+    if (res.status === 401 && !apiKey) {
+      throw new Error('Unauthorized. Set your API key in localStorage under "cashflow_api_key".');
+    }
     if (!res.ok) throw new Error(data?.detail || `Request failed (${res.status})`);
     return data;
   } catch (err) {
@@ -2876,7 +2902,7 @@ async function renderKPIs() {
   const summary = await fetchAPI('/summary');
   if (!summary) return;
 
-  const mnt = summary.month_data;
+  const mnt = summary.month_data || summary;
   const prev = summary.previous_month_data;
   
   if (mnt) {
@@ -2907,8 +2933,12 @@ async function renderKPIs() {
 async function renderCharts() {
   const byDept = await fetchAPI('/summary/spend-by-dept');
   if (byDept) {
-    const labels = byDept.map(d => d.department);
-    const data = byDept.map(d => d.total_spend);
+    const labels = Array.isArray(byDept)
+      ? byDept.map(d => d.department)
+      : (byDept.labels || []);
+    const data = Array.isArray(byDept)
+      ? byDept.map(d => d.total_spend || d.spent || 0)
+      : (byDept.spend || byDept.values || []);
     const colors = [C.accent, C.danger, C.warning, C.success, C.purple, C.teal];
     
     if(document.getElementById('deptChart')) {
@@ -2932,8 +2962,12 @@ async function renderCharts() {
 
   const byCat = await fetchAPI('/summary/spend-by-category');
   if (byCat) {
-    const labels = byCat.map(d => d.category);
-    const data = byCat.map(d => d.total_spend);
+    const labels = Array.isArray(byCat)
+      ? byCat.map(d => d.category)
+      : (byCat.labels || []);
+    const data = Array.isArray(byCat)
+      ? byCat.map(d => d.total_spend || d.amount || 0)
+      : (byCat.values || byCat.spend || []);
     const colors = [C.purple, C.accent, C.success, C.warning, C.gray, C.teal, C.orange];
 
     if(document.getElementById('donutChart')) {
@@ -2957,26 +2991,34 @@ async function renderCharts() {
   }
 
   const trend = await fetchAPI('/summary/trend');
-  if (trend && trend.length > 0 && document.getElementById('trendChart')) {
-    const dates = trend.map(d => formatDate(d.date));
-    const vals = trend.map(d => d.daily_spend);
-    new Chart(document.getElementById('trendChart'), {
-      type: 'line',
-      data: {
-        labels: dates,
-        datasets: [{label:'Daily Spend', data:vals, borderColor:C.accent, backgroundColor:'rgba(79,124,255,0.05)', tension:0.4, borderWidth:1.5, pointRadius:0, fill:true}]
-      },
-      options: { ...baseOpts, plugins:{ ...baseOpts.plugins, tooltip:{...baseOpts.plugins.tooltip,
-        callbacks:{label:c=>` ${c.dataset.label}: ${formatCurrency(c.parsed.y)}`}
-      }}}
-    });
+  if (trend && document.getElementById('trendChart')) {
+    const dates = Array.isArray(trend)
+      ? trend.map(d => formatDate(d.date))
+      : (trend.labels || []).map(d => formatDate(d));
+    const vals = Array.isArray(trend)
+      ? trend.map(d => d.daily_spend)
+      : (trend.daily_total || []);
+
+    if (dates.length) {
+      new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [{label:'Daily Spend', data:vals, borderColor:C.accent, backgroundColor:'rgba(79,124,255,0.05)', tension:0.4, borderWidth:1.5, pointRadius:0, fill:true}]
+        },
+        options: { ...baseOpts, plugins:{ ...baseOpts.plugins, tooltip:{...baseOpts.plugins.tooltip,
+          callbacks:{label:c=>` ${c.dataset.label}: ${formatCurrency(c.parsed.y)}`}
+        }}}
+      });
+    }
   }
 
   const bud = await fetchAPI('/budgets/utilization');
   if (bud && document.getElementById('budgetChart')) {
-    const labels = bud.map(b => b.department);
-    const budgetData = bud.map(b => b.amount);
-    const actualData = bud.map(b => b.spent);
+    const rows = Array.isArray(bud) ? bud : (bud.departments || []);
+    const labels = rows.map(b => b.department);
+    const budgetData = rows.map(b => b.amount ?? b.budget ?? 0);
+    const actualData = rows.map(b => b.spent ?? 0);
     new Chart(document.getElementById('budgetChart'), {
       type: 'bar',
       data: {
@@ -2994,28 +3036,35 @@ async function renderCharts() {
 }
 
 async function renderTransactions() {
-  const txns = await fetchAPI('/transactions?limit=25');
+  const txnsResp = await fetchAPI('/transactions?per_page=25');
+  const txns = Array.isArray(txnsResp) ? txnsResp : (txnsResp?.data || []);
   const txnBody = document.getElementById('txn-tbody');
   if (!txnBody || !txns) return;
   txnBody.innerHTML = '';
   
   txns.forEach(t => {
+    const reviewStatus = t.review_status || t.status || 'pending';
+    const vendorName = t.vendor_name || t.vendor || 'Unknown';
+    const invoiceNumber = t.invoice_number || t.invoice_no || '-';
+    const paymentMethod = t.payment_method || '-';
+    const category = t.category || 'Uncategorized';
+    const department = t.department || 'N/A';
     let statusClass = 'badge-warning';
-    if (t.review_status === 'approved') statusClass = 'badge-success';
-    else if (t.review_status === 'flagged') statusClass = 'badge-critical';
+    if (reviewStatus === 'approved' || reviewStatus === 'paid') statusClass = 'badge-success';
+    else if (reviewStatus === 'flagged' || reviewStatus === 'rejected') statusClass = 'badge-critical';
     
     let receiptStatus = t.has_receipt ? 'Yes' : 'No';
     let receiptClass = t.has_receipt ? 'color-success' : 'color-danger';
 
     txnBody.innerHTML += `<tr>
       <td class="mono text2">${formatDate(t.date)}</td>
-      <td style="font-weight:500">${t.vendor_name}</td>
-      <td><span class="badge badge-info">${t.category || 'Uncategorized'}</span></td>
-      <td class="text2">${t.department || 'N/A'}</td>
+      <td style="font-weight:500">${escapeHTML(vendorName)}</td>
+      <td><span class="badge badge-info">${escapeHTML(category)}</span></td>
+      <td class="text2">${escapeHTML(department)}</td>
       <td class="mono">${formatCurrency(t.amount)}</td>
-      <td class="text2">${t.payment_method || '-'}</td>
-      <td class="mono text3">${t.invoice_number || '-'}</td>
-      <td><span class="badge ${statusClass}">${t.review_status || 'pending'}</span></td>
+      <td class="text2">${escapeHTML(paymentMethod)}</td>
+      <td class="mono text3">${escapeHTML(invoiceNumber)}</td>
+      <td><span class="badge ${statusClass}">${escapeHTML(reviewStatus)}</span></td>
       <td class="${receiptClass}" style="font-size:12px;font-weight:500">${receiptStatus}</td>
       <td><button class="btn btn-sm"><span>View</span></button></td>
     </tr>`;
@@ -3025,14 +3074,17 @@ async function renderTransactions() {
 const GLOBAL_ANOMALIES = [];
 
 async function renderAnomalies() {
-  const anomalies = await fetchAPI('/anomalies');
+  const anomaliesResp = await fetchAPI('/anomalies');
+  const anomalies = Array.isArray(anomaliesResp) ? anomaliesResp : (anomaliesResp?.data || []);
   if (!anomalies) return;
   
   GLOBAL_ANOMALIES.length = 0;
   GLOBAL_ANOMALIES.push(...anomalies);
   
   let criticalCount = anomalies.filter(a => a.severity === 'critical').length;
-  let unresolvedVal = anomalies.filter(a => a.status !== 'resolved').reduce((acc, a) => acc + (a.transaction?.amount || 0), 0);
+  let unresolvedVal = anomalies
+    .filter(a => a.status !== 'resolved')
+    .reduce((acc, a) => acc + readTxnAmount(a.transaction || a.transactions), 0);
   
   const acount = document.getElementById('kpi-anomalies-count');
   if (acount) {
@@ -3061,7 +3113,7 @@ async function sendChat() {
   const msg = input.value.trim();
   if (!msg) return;
   const msgs = document.getElementById('chat-messages');
-  msgs.innerHTML += `<div class="chat-msg user"><div class="chat-avatar" style="background:var(--surface3);color:var(--text2)">SR</div><div class="chat-bubble">${msg}</div></div>`;
+  msgs.innerHTML += `<div class="chat-msg user"><div class="chat-avatar" style="background:var(--surface3);color:var(--text2)">SR</div><div class="chat-bubble">${escapeHTML(msg)}</div></div>`;
   input.value = '';
   msgs.scrollTop = msgs.scrollHeight;
 
@@ -3070,13 +3122,13 @@ async function sendChat() {
   msgs.scrollTop = msgs.scrollHeight;
 
   try {
-    const res = await fetchAPI('/chat', 'POST', { message: msg, context: chatHistory });
+    const res = await fetchAPI('/chat', 'POST', { message: msg, history: chatHistory });
     document.getElementById(loadingId).remove();
     
     if (res && res.reply) {
       chatHistory.push({ role: "user", content: msg });
       chatHistory.push({ role: "assistant", content: res.reply });
-      msgs.innerHTML += `<div class="chat-msg"><div class="chat-avatar" style="background:var(--accent-bg);color:var(--accent)">AI</div><div class="chat-bubble">${res.reply}</div></div>`;
+      msgs.innerHTML += `<div class="chat-msg"><div class="chat-avatar" style="background:var(--accent-bg);color:var(--accent)">AI</div><div class="chat-bubble">${escapeHTML(res.reply)}</div></div>`;
     } else {
       msgs.innerHTML += `<div class="chat-msg"><div class="chat-avatar" style="background:var(--danger-bg);color:var(--danger)">!</div><div class="chat-bubble" style="color:var(--danger)">Failed to connect to AI engine.</div></div>`;
     }
@@ -3120,13 +3172,23 @@ document.querySelectorAll('.btn-ai').forEach(btn => {
 
         const result = await fetchAPI(endpoint, 'POST', formData);
 
-        if (result && (result.status === 'success' || result.status === 'done' || result.inserted_ids)) {
-          showToast(`File processed successfully! ${result.inserted_ids ? result.inserted_ids.length : ''} transactions added.`, 'success');
-          // Refresh global data
-          initDashboard();
-          
-          // Switch to dashboard after a delay
-          setTimeout(() => switchPage('dashboard'), 1500);
+        const isSuccess = result && (
+          result.status === 'success' ||
+          result.status === 'done' ||
+          result.status === 'extracted' ||
+          result.inserted_ids
+        );
+
+        if (isSuccess) {
+          if (result.status === 'extracted') {
+            showToast('Receipt extracted successfully. Review extracted fields before saving.', 'success');
+          } else {
+            showToast(`File processed successfully! ${result.inserted_ids ? result.inserted_ids.length : 0} transactions added.`, 'success');
+            // Refresh global data
+            initDashboard();
+            // Switch to dashboard after a delay
+            setTimeout(() => switchPage('dashboard'), 1500);
+          }
         } else {
           throw new Error(result?.detail || 'Analysis failed');
         }
@@ -3192,19 +3254,27 @@ function toggleFab() {
 function openDrawer(idx) {
   const d = GLOBAL_ANOMALIES[idx];
   if (!d) return;
+  const txn = d.transaction || d.transactions || {};
   
-  let typeLabel = d.type === 'duplicate' ? 'Duplicate Detected' : d.type === 'spike' ? 'Spend Spike' : d.type === 'unknown_vendor' ? 'Unknown Vendor' : 'Missing Receipt';
+  let typeLabel = d.type === 'duplicate' || d.type === 'duplicate_invoice'
+    ? 'Duplicate Detected'
+    : d.type === 'spike' || d.type === 'spend_spike'
+    ? 'Spend Spike'
+    : d.type === 'unknown_vendor'
+    ? 'Unknown Vendor'
+    : 'Missing Receipt';
   document.getElementById('drawer-title').textContent = typeLabel;
-  document.getElementById('drawer-vendor').textContent = d.transaction ? d.transaction.vendor_name : 'Unknown';
-  document.getElementById('drawer-amount').textContent = d.transaction ? formatCurrency(d.transaction.amount) : '₹0';
-  document.getElementById('drawer-date').textContent = d.transaction ? formatDate(d.transaction.date) : '-';
-  document.getElementById('drawer-dept').textContent = d.transaction ? (d.transaction.department || 'All') : '-';
-  document.getElementById('drawer-method').textContent = d.transaction ? (d.transaction.payment_method || '-') : '-';
+  document.getElementById('drawer-vendor').textContent = txn.vendor_name || txn.vendor || 'Unknown';
+  document.getElementById('drawer-amount').textContent = txn.amount ? formatCurrency(txn.amount) : '₹0';
+  document.getElementById('drawer-date').textContent = txn.date ? formatDate(txn.date) : '-';
+  document.getElementById('drawer-dept').textContent = txn.department || 'All';
+  document.getElementById('drawer-method').textContent = txn.payment_method || '-';
   
   const sevBadge = d.severity === 'critical' ? 'badge-critical' : d.severity === 'warning' ? 'badge-warning' : 'badge-info';
-  const sevLabel = d.severity.charAt(0).toUpperCase() + d.severity.slice(1);
-  document.getElementById('drawer-severity').innerHTML = `<span class="badge ${sevBadge}">${sevLabel}</span>`;
-  document.getElementById('drawer-reasoning').innerHTML = d.description || 'No detailed reasoning provided by the AI.';
+  const severity = d.severity || 'info';
+  const sevLabel = severity.charAt(0).toUpperCase() + severity.slice(1);
+  document.getElementById('drawer-severity').innerHTML = `<span class="badge ${sevBadge}">${escapeHTML(sevLabel)}</span>`;
+  document.getElementById('drawer-reasoning').textContent = d.description || 'No detailed reasoning provided by the AI.';
   
   const compBody = document.getElementById('drawer-comparison');
   compBody.innerHTML = ''; 
@@ -3300,7 +3370,13 @@ function showToast(message, type = 'info', duration = 3000) {
   const icons = { success: '✓', error: '✕', warning: '!', info: 'ℹ' };
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.innerHTML = `<span style="font-size:13px">${icons[type] || 'ℹ'}</span><span>${message}</span>`;
+  const iconEl = document.createElement('span');
+  iconEl.style.fontSize = '13px';
+  iconEl.textContent = icons[type] || 'ℹ';
+  const msgEl = document.createElement('span');
+  msgEl.textContent = String(message ?? '');
+  toast.appendChild(iconEl);
+  toast.appendChild(msgEl);
   container.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = '0';
