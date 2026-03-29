@@ -2431,13 +2431,27 @@ tbody tr {
               </label>
             </div>
             <div class="divider"></div>
-            <div class="text-sm" style="font-weight:600">API Keys</div>
-            <div>
-              <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Live API Key</div>
+            <div class="text-sm" style="font-weight:600">API Access</div>
+            <div style="display:flex;flex-direction:column;gap:var(--s3)">
+              <div class="text-sm color-text2" id="settings-api-status">No API key saved in this browser.</div>
+              <div>
+                <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Live API Key</div>
+                <input
+                  class="input"
+                  id="settings-api-key"
+                  type="password"
+                  placeholder="Paste your Render API key"
+                  autocomplete="off"
+                  spellcheck="false"
+                  style="font-family:var(--mono);font-size:12px"
+                />
+              </div>
               <div class="flex gap-2">
-                <input class="input" value="cf_live_••••••••••••••••••••••••" readonly style="font-family:var(--mono);font-size:12px;color:var(--text2)"/>
-                <button class="btn btn-sm"><span>Show</span></button>
-                <button class="btn btn-sm"><span>Rotate</span></button>
+                <button class="btn btn-sm btn-primary" id="settings-api-save-btn"><span>Save Key</span></button>
+                <button class="btn btn-sm" id="settings-api-clear-btn"><span>Clear</span></button>
+              </div>
+              <div class="text-sm color-text2">
+                Stored only in this browser so the deployed frontend can authenticate with your Render backend.
               </div>
             </div>
           </div>
@@ -2536,6 +2550,42 @@ tbody tr {
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('modal-add-txn')">Cancel</button>
       <button class="btn btn-primary" id="add-txn-submit">Add Transaction</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     API KEY MODAL
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-api-key">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>API Key Required</h3>
+      <button class="drawer-close" onclick="cancelApiKeyPrompt()">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:var(--s4)">
+      <div class="text-sm color-text2" id="api-key-modal-help">
+        This deployment requires your backend API key before it can load data.
+      </div>
+      <div>
+        <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Live API Key</div>
+        <input
+          class="input"
+          id="api-key-modal-input"
+          type="password"
+          placeholder="Paste your Render API key"
+          autocomplete="off"
+          spellcheck="false"
+          style="font-family:var(--mono);font-size:12px"
+        />
+      </div>
+      <div class="text-sm color-text2">
+        The key is stored only in this browser and sent to the backend as `X-API-Key`.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="cancelApiKeyPrompt()">Cancel</button>
+      <button class="btn btn-primary" id="api-key-modal-save-btn"><span>Save & Retry</span></button>
     </div>
   </div>
 </div>
@@ -2669,10 +2719,28 @@ function switchPage(page) {
 // ══════════════════════════════════════════
 const API_BASE = 'https://cashflow-api-dedx.onrender.com/api';
 const API_KEY_STORAGE_KEY = 'cashflow_api_key';
-const FRONTEND_BUILD = '2026-03-29.3+stabilize-upload-refresh';
+const FRONTEND_BUILD = '2026-03-29.4+auth-recovery';
 
 function getApiKey() {
   return (localStorage.getItem(API_KEY_STORAGE_KEY) || '').trim();
+}
+
+function setApiKey(value) {
+  const trimmed = String(value || '').trim();
+  if (trimmed) {
+    localStorage.setItem(API_KEY_STORAGE_KEY, trimmed);
+  } else {
+    localStorage.removeItem(API_KEY_STORAGE_KEY);
+  }
+  syncApiKeyUI();
+  return trimmed;
+}
+
+function maskApiKey(value) {
+  const key = String(value || '').trim();
+  if (!key) return 'not saved';
+  if (key.length <= 6) return `${key.slice(0, 2)}••${key.slice(-1)}`;
+  return `${key.slice(0, 4)}••••••${key.slice(-4)}`;
 }
 
 function escapeHTML(value) {
@@ -2723,6 +2791,126 @@ const baseOpts = {
 
 const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
 const formatDate = (ds) => new Date(ds).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+let pendingApiKeyPrompt = null;
+let resolvePendingApiKeyPrompt = null;
+
+function syncApiKeyUI() {
+  const apiKey = getApiKey();
+  const settingsInput = document.getElementById('settings-api-key');
+  const settingsStatus = document.getElementById('settings-api-status');
+  const modalInput = document.getElementById('api-key-modal-input');
+
+  if (settingsInput && document.activeElement !== settingsInput) {
+    settingsInput.value = apiKey;
+  }
+  if (settingsStatus) {
+    settingsStatus.textContent = apiKey
+      ? `Saved locally: ${maskApiKey(apiKey)}`
+      : 'No API key saved in this browser.';
+  }
+  if (modalInput && document.activeElement !== modalInput && !document.getElementById('modal-api-key')?.classList.contains('open')) {
+    modalInput.value = apiKey;
+  }
+}
+
+async function rawApiRequest(endpoint, method = 'GET', body = null, apiKeyOverride = '') {
+  const opts = { method, headers: {} };
+  const apiKey = String(apiKeyOverride || '').trim();
+  if (apiKey) {
+    opts.headers['X-API-Key'] = apiKey;
+    opts.headers['Authorization'] = `Bearer ${apiKey}`;
+  }
+  if (body) {
+    if (body instanceof FormData) {
+      opts.body = body;
+    } else {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+  }
+  const res = await fetch(`${API_BASE}${endpoint}`, opts);
+  let data;
+  try { data = await res.json(); } catch(e) { data = null; }
+  return { res, data };
+}
+
+async function verifyApiKeyCandidate(candidate) {
+  const apiKey = String(candidate || '').trim();
+  if (!apiKey) throw new Error('Enter your API key to continue.');
+  const { res, data } = await rawApiRequest('/summary/months', 'GET', null, apiKey);
+  if (res.status === 401) {
+    throw new Error('Unauthorized. That API key was rejected.');
+  }
+  if (!res.ok) {
+    throw new Error(data?.detail || `Request failed (${res.status})`);
+  }
+  return apiKey;
+}
+
+function closeApiKeyPrompt(resolvedValue = '') {
+  document.getElementById('modal-api-key')?.classList.remove('open');
+  if (resolvePendingApiKeyPrompt) {
+    resolvePendingApiKeyPrompt(String(resolvedValue || '').trim());
+  }
+  pendingApiKeyPrompt = null;
+  resolvePendingApiKeyPrompt = null;
+}
+
+function promptForApiKey(message) {
+  const overlay = document.getElementById('modal-api-key');
+  const help = document.getElementById('api-key-modal-help');
+  const input = document.getElementById('api-key-modal-input');
+  if (!overlay || !help || !input) return Promise.resolve('');
+
+  help.textContent = message || 'Enter your backend API key to continue.';
+  input.value = getApiKey();
+  overlay.classList.add('open');
+  requestAnimationFrame(() => {
+    input.focus();
+    input.select();
+  });
+
+  if (pendingApiKeyPrompt) return pendingApiKeyPrompt;
+
+  pendingApiKeyPrompt = new Promise((resolve) => {
+    resolvePendingApiKeyPrompt = resolve;
+  });
+  return pendingApiKeyPrompt;
+}
+
+async function saveApiKeyFromPrompt() {
+  const input = document.getElementById('api-key-modal-input');
+  try {
+    const apiKey = await verifyApiKeyCandidate(input?.value || '');
+    setApiKey(apiKey);
+    showToast('API key saved locally.', 'success');
+    closeApiKeyPrompt(apiKey);
+  } catch (err) {
+    showToast(err.message || 'Unable to save API key.', 'error');
+  }
+}
+
+function cancelApiKeyPrompt() {
+  closeApiKeyPrompt('');
+}
+
+async function saveApiKeyFromSettings() {
+  const input = document.getElementById('settings-api-key');
+  try {
+    const apiKey = await verifyApiKeyCandidate(input?.value || '');
+    setApiKey(apiKey);
+    showToast('API key saved locally. Reconnecting...', 'success');
+    await hydrateMonthOptions();
+    await refreshAllData();
+  } catch (err) {
+    showToast(err.message || 'Unable to save API key.', 'error');
+  }
+}
+
+function clearStoredApiKey() {
+  setApiKey('');
+  showToast('Stored API key cleared from this browser.', 'info');
+}
 
 function upsertChart(canvasId, config) {
   const canvas = document.getElementById(canvasId);
@@ -2734,29 +2922,25 @@ function upsertChart(canvasId, config) {
   return CHART_REGISTRY[canvasId];
 }
 
-async function fetchAPI(endpoint, method = 'GET', body = null) {
+async function fetchAPI(endpoint, method = 'GET', body = null, allowAuthRetry = true) {
   try {
-    const opts = { method, headers: {} };
     const apiKey = getApiKey();
-    if (apiKey) {
-      opts.headers['X-API-Key'] = apiKey;
-      opts.headers['Authorization'] = `Bearer ${apiKey}`;
-    }
-    if (body) {
-      if (body instanceof FormData) {
-        opts.body = body;
-        // Do NOT set Content-Type header for FormData, browser needs to set it with boundary
-      } else {
-        opts.headers['Content-Type'] = 'application/json';
-        opts.body = JSON.stringify(body);
-      }
-    }
-    const res = await fetch(`${API_BASE}${endpoint}`, opts);
-    let data;
-    try { data = await res.json(); } catch(e) { data = null; }
+    const { res, data } = await rawApiRequest(endpoint, method, body, apiKey);
 
-    if (res.status === 401 && !apiKey) {
-      throw new Error('Unauthorized. Set your API key in localStorage under "cashflow_api_key".');
+    if (res.status === 401) {
+      if (allowAuthRetry) {
+        const recoveredKey = await promptForApiKey(
+          apiKey
+            ? 'The saved API key was rejected by the backend. Update it to continue.'
+            : 'This deployment is protected. Enter your backend API key to continue.'
+        );
+        if (recoveredKey) {
+          return fetchAPI(endpoint, method, body, false);
+        }
+      }
+      throw new Error(apiKey
+        ? 'Unauthorized. The current API key was rejected.'
+        : 'Unauthorized. API key required.');
     }
     if (!res.ok) throw new Error(data?.detail || `Request failed (${res.status})`);
     return data;
@@ -3739,6 +3923,7 @@ function normalizeAiButtons() {
 
 window.addEventListener('DOMContentLoaded', async () => {
   try {
+    syncApiKeyUI();
     normalizeAiButtons();
     await hydrateMonthOptions();
     await refreshAllData();
@@ -3750,7 +3935,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (e) {
     console.error('Initial dashboard load failed:', e);
-    showToast('Initial data load failed. Check API key and backend CORS settings.', 'warning');
+    showToast(e?.message || 'Initial data load failed.', 'warning');
   }
 });
 
@@ -4284,6 +4469,39 @@ async function exportReportsPDF() {
 
 document.querySelectorAll('#page-settings .btn-primary').forEach((btn) => {
   if (btn.textContent.trim() === 'Save changes') btn.addEventListener('click', () => showToast('Settings saved successfully', 'success'));
+});
+
+document.getElementById('settings-api-save-btn')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  await saveApiKeyFromSettings();
+});
+
+document.getElementById('settings-api-clear-btn')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  clearStoredApiKey();
+});
+
+document.getElementById('api-key-modal-save-btn')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  await saveApiKeyFromPrompt();
+});
+
+document.getElementById('settings-api-key')?.addEventListener('keydown', async (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    await saveApiKeyFromSettings();
+  }
+});
+
+document.getElementById('api-key-modal-input')?.addEventListener('keydown', async (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    await saveApiKeyFromPrompt();
+  }
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    cancelApiKeyPrompt();
+  }
 });
 
 function bindAsyncClick(elementId, handler) {
