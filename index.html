@@ -658,26 +658,35 @@ tbody tr:hover td {
 .btn-ai {
   background: linear-gradient(135deg, #4F7CFF 0%, #8B5CF6 100%);
   border: 1px solid rgba(79,124,255,0.4);
-  color: #fff;
-  font-weight: 500;
+  color: #ffffff !important;
+  font-weight: 600;
   position: relative;
   overflow: hidden;
   box-shadow: 0 0 12px rgba(79,124,255,0.25), 0 0 4px rgba(79,124,255,0.15);
-  transition: box-shadow 0.2s ease, transform 0.15s ease;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+.btn-ai span { 
+  position: relative; 
+  z-index: 2; 
 }
 .btn-ai:hover {
   box-shadow: 0 0 20px rgba(79,124,255,0.4), 0 0 8px rgba(139,92,246,0.3);
   transform: translateY(-1px);
-  color: #fff;
+  color: #ffffff !important;
   background: linear-gradient(135deg, #3F6AE6 0%, #7C3AED 100%);
   border-color: rgba(79,124,255,0.6);
 }
 .btn-ai::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
   transform: translateX(-100%);
+  z-index: 0;
   transition: transform 0.5s ease;
 }
 .btn-ai:hover::after {
@@ -1422,7 +1431,7 @@ tbody tr {
   <div class="sidebar-section">
     <div class="sidebar-section-label">Overview</div>
     <div class="nav-item active" data-page="dashboard">
-      <span class="nav-icon">⊞</span> Dashboard
+      <span class="nav-icon">■</span> Dashboard
     </div>
     <div class="nav-item" data-page="transactions">
       <span class="nav-icon">↕</span> Transactions
@@ -1431,32 +1440,32 @@ tbody tr {
       <span class="nav-icon">↑</span> Upload Expenses
     </div>
     <div class="nav-item" data-page="analytics">
-      <span class="nav-icon">∿</span> Analytics
+      <span class="nav-icon">~</span> Analytics
     </div>
   </div>
 
   <div class="sidebar-section">
     <div class="sidebar-section-label">Intelligence</div>
     <div class="nav-item" data-page="anomalies">
-      <span class="nav-icon">⚠</span> Anomalies
+      <span class="nav-icon">!</span> Anomalies
       <span class="nav-badge">4</span>
     </div>
     <div class="nav-item" data-page="subscriptions">
-      <span class="nav-icon">↺</span> Subscriptions
+      <span class="nav-icon">R</span> Subscriptions
       <span class="nav-badge warn">3</span>
     </div>
     <div class="nav-item" data-page="forecasting">
       <span class="nav-icon">→</span> Forecasting
     </div>
     <div class="nav-item" data-page="aiinsights">
-      <span class="nav-icon">◈</span> AI Insights
+      <span class="nav-icon">✦</span> AI Insights
     </div>
   </div>
 
   <div class="sidebar-section">
     <div class="sidebar-section-label">Management</div>
     <div class="nav-item" data-page="budgets">
-      <span class="nav-icon">▤</span> Budgets
+      <span class="nav-icon">=</span> Budgets
     </div>
     <div class="nav-item" data-page="vendors">
       <span class="nav-icon">◎</span> Vendors
@@ -1583,7 +1592,7 @@ tbody tr {
               <div class="card-sub">Daily spend — January 2025</div>
             </div>
             <div class="flex gap-2">
-              <button class="btn btn-sm">CSV</button>
+              <button class="btn btn-sm"><span>CSV</span></button>
             </div>
           </div>
           <div class="p-4" style="padding-top:0">
@@ -1796,8 +1805,8 @@ tbody tr {
           <option>Engineering</option><option>Marketing</option>
           <option>Sales</option><option>HR</option>
         </select>
-        <button class="btn">Export CSV</button>
-        <button class="btn btn-primary">+ Add</button>
+        <button class="btn"><span>Export CSV</span></button>
+        <button class="btn btn-primary"><span>+ Add</span></button>
       </div>
     </div>
     <div class="card">
@@ -1858,7 +1867,7 @@ tbody tr {
         <div class="card">
           <div class="card-header">
             <div class="card-title">Preview — Parsed Data</div>
-            <button class="btn btn-ai">◈ Process with AI →</button>
+            <button class="btn btn-ai"><span><span>Process with AI</span></span></button>
           </div>
           <div class="table-wrap">
             <table>
@@ -1970,7 +1979,7 @@ tbody tr {
         <span class="badge badge-critical">2 Critical</span>
         <span class="badge badge-warning">1 Warning</span>
         <span class="badge badge-info">1 Info</span>
-        <button class="btn">Mark All Reviewed</button>
+        <button class="btn"><span>Mark All Reviewed</span></button>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:var(--s3)">
@@ -1986,8 +1995,8 @@ tbody tr {
             <div class="font-mono" style="font-size:18px;font-weight:500;color:var(--danger)">₹50,000</div>
             <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">Jan 12, 2025</div>
             <div class="flex gap-2">
-              <button class="btn btn-sm btn-danger">Flag</button>
-              <button class="btn btn-sm">Approve</button>
+              <button class="btn btn-sm btn-danger"><span>Flag</span></button>
+              <button class="btn btn-sm"><span>Approve</span></button>
             </div>
           </div>
         </div>
@@ -2004,8 +2013,8 @@ tbody tr {
             <div class="font-mono" style="font-size:18px;font-weight:500;color:var(--danger)">₹18,400</div>
             <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">Jan 11, 2025</div>
             <div class="flex gap-2">
-              <button class="btn btn-sm btn-danger">Dispute</button>
-              <button class="btn btn-sm">Ignore</button>
+              <button class="btn btn-sm btn-danger"><span>Dispute</span></button>
+              <button class="btn btn-sm"><span>Ignore</span></button>
             </div>
           </div>
         </div>
@@ -2022,8 +2031,8 @@ tbody tr {
             <div class="font-mono" style="font-size:18px;font-weight:500;color:var(--warning)">₹22,000</div>
             <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">Jan 15, 2025</div>
             <div class="flex gap-2">
-              <button class="btn btn-sm btn-danger">Alert Team</button>
-              <button class="btn btn-sm">Acknowledge</button>
+              <button class="btn btn-sm btn-danger"><span>Alert Team</span></button>
+              <button class="btn btn-sm"><span>Acknowledge</span></button>
             </div>
           </div>
         </div>
@@ -2040,8 +2049,8 @@ tbody tr {
             <div class="font-mono" style="font-size:18px;font-weight:500">₹3,800</div>
             <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">Jan 10, 2025</div>
             <div class="flex gap-2">
-              <button class="btn btn-sm">Request Receipt</button>
-              <button class="btn btn-sm">Approve</button>
+              <button class="btn btn-sm"><span>Request Receipt</span></button>
+              <button class="btn btn-sm"><span>Approve</span></button>
             </div>
           </div>
         </div>
@@ -2059,8 +2068,8 @@ tbody tr {
         <div class="text-sm color-text2" style="margin-top:4px">28 active · ₹1,84,000/mo · ₹22,08,000/yr</div>
       </div>
       <div class="section-actions">
-        <button class="btn">Export</button>
-        <button class="btn btn-primary">+ Add Subscription</button>
+        <button class="btn"><span>Export</span></button>
+        <button class="btn btn-primary"><span>+ Add Subscription</span></button>
       </div>
     </div>
     <div class="grid-3 mb-4">
@@ -2164,8 +2173,8 @@ tbody tr {
               <div class="insight-title">Cancel 3 unused SaaS tools — save ₹2.2L/yr</div>
               <div class="insight-body">Figma (47d unused), Webflow (22d unused), and Loom (31d unused) are collectively costing ₹18,400/month with zero usage. Cancelling all three saves ₹2,20,800 annually with no impact on operations.</div>
               <div style="margin-top:var(--s3);display:flex;gap:var(--s2)">
-                <button class="btn btn-sm btn-primary">Take action</button>
-                <button class="btn btn-sm">Dismiss</button>
+                <button class="btn btn-sm btn-primary"><span>Take action</span></button>
+                <button class="btn btn-sm"><span>Dismiss</span></button>
               </div>
             </div>
           </div>
@@ -2175,8 +2184,8 @@ tbody tr {
               <div class="insight-title">Sales department 20% over budget — root cause identified</div>
               <div class="insight-body">₹40,000 overspent primarily in client meals (₹22,000) and flights (₹18,000). 3 employees account for 78% of overrun. Consider enforcing pre-approval for T&E above ₹5,000.</div>
               <div style="margin-top:var(--s3);display:flex;gap:var(--s2)">
-                <button class="btn btn-sm btn-primary">View breakdown</button>
-                <button class="btn btn-sm">Set policy</button>
+                <button class="btn btn-sm btn-primary"><span>View breakdown</span></button>
+                <button class="btn btn-sm"><span>Set policy</span></button>
               </div>
             </div>
           </div>
@@ -2186,8 +2195,8 @@ tbody tr {
               <div class="insight-title">AWS Reserved Instances could save ₹79,200/yr</div>
               <div class="insight-body">Your EC2 usage pattern shows consistent baseline load. Switching from on-demand to 1-year reserved instances for your top 3 instance types reduces monthly AWS bill by ₹6,600 (30%).</div>
               <div style="margin-top:var(--s3);display:flex;gap:var(--s2)">
-                <button class="btn btn-sm btn-ai">◈ Calculate savings</button>
-                <button class="btn btn-sm">Remind later</button>
+                <button class="btn btn-sm btn-ai"><span>✦ Calculate savings</span></button>
+                <button class="btn btn-sm"><span>Remind later</span></button>
               </div>
             </div>
           </div>
@@ -2197,19 +2206,19 @@ tbody tr {
               <div class="insight-title">Jira + Asana overlap — consolidate to one tool</div>
               <div class="insight-body">Engineering uses Jira (₹8,200/mo) and Marketing uses Asana (₹4,100/mo) for similar project tracking needs. Consolidating to Jira with cross-team access saves ₹4,100/mo and reduces tool fragmentation.</div>
               <div style="margin-top:var(--s3);display:flex;gap:var(--s2)">
-                <button class="btn btn-sm btn-primary">Review overlap</button>
-                <button class="btn btn-sm">Dismiss</button>
+                <button class="btn btn-sm btn-primary"><span>Review overlap</span></button>
+                <button class="btn btn-sm"><span>Dismiss</span></button>
               </div>
             </div>
           </div>
           <div class="insight-card">
-            <div class="insight-icon" style="background:var(--success-bg);font-size:16px">↺</div>
+            <div class="insight-icon" style="background:var(--success-bg);font-size:16px">R</div>
             <div>
               <div class="insight-title">Engineering ₹40,000 under budget — reallocate to Q2</div>
               <div class="insight-body">Engineering is tracking 16% under January budget due to delayed hiring. ₹40,000 can be carried forward and earmarked for Q2 infrastructure upgrade without affecting other teams.</div>
               <div style="margin-top:var(--s3);display:flex;gap:var(--s2)">
-                <button class="btn btn-sm btn-primary">Reallocate funds</button>
-                <button class="btn btn-sm">Archive</button>
+                <button class="btn btn-sm btn-primary"><span>Reallocate funds</span></button>
+                <button class="btn btn-sm"><span>Archive</span></button>
               </div>
             </div>
           </div>
@@ -2240,7 +2249,7 @@ tbody tr {
           </div>
           <div class="chat-input-row">
             <input class="input" id="chat-input" placeholder="Ask about your finances..." style="flex:1" onkeydown="if(event.key==='Enter')sendChat()"/>
-            <button class="btn btn-ai btn-sm" onclick="sendChat()">◈ Send</button>
+            <button class="btn btn-ai btn-sm" onclick="sendChat()">✦ Send</button>
           </div>
         </div>
       </div>
@@ -2254,8 +2263,8 @@ tbody tr {
     <div class="section-hd mb-4">
       <div class="section-title" style="font-size:14px">Budget Management</div>
       <div class="section-actions">
-        <button class="btn">Export</button>
-        <button class="btn btn-primary">+ Set Budget</button>
+        <button class="btn"><span>Export</span></button>
+        <button class="btn btn-primary"><span>+ Set Budget</span></button>
       </div>
     </div>
     <div class="grid-4 mb-4">
@@ -2327,8 +2336,8 @@ tbody tr {
     <div class="section-hd mb-4">
       <div class="section-title" style="font-size:14px">Vendor Analytics</div>
       <div class="section-actions">
-        <button class="btn">Export</button>
-        <button class="btn btn-primary">+ Add Vendor</button>
+        <button class="btn"><span>Export</span></button>
+        <button class="btn btn-primary"><span>+ Add Vendor</span></button>
       </div>
     </div>
     <div class="row mb-4">
@@ -2416,9 +2425,9 @@ tbody tr {
     <div class="section-hd mb-4">
       <div class="section-title" style="font-size:14px">Reports</div>
       <div class="section-actions">
-        <button class="btn">Export PDF</button>
-        <button class="btn">Export CSV</button>
-        <button class="btn btn-primary">Email Report</button>
+        <button class="btn"><span>Export PDF</span></button>
+        <button class="btn"><span>Export CSV</span></button>
+        <button class="btn btn-primary"><span>Email Report</span></button>
       </div>
     </div>
     <div class="grid-3">
@@ -2428,8 +2437,8 @@ tbody tr {
           <div style="font-size:13px;font-weight:600;margin-bottom:4px">Monthly Report</div>
           <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">Complete January 2025 spend summary with charts, anomalies, and insights</div>
           <div class="flex gap-2">
-            <button class="btn btn-sm btn-primary">Export PDF</button>
-            <button class="btn btn-sm">CSV</button>
+            <button class="btn btn-sm btn-primary"><span>Export PDF</span></button>
+            <button class="btn btn-sm"><span>CSV</span></button>
           </div>
         </div>
       </div>
@@ -2439,8 +2448,8 @@ tbody tr {
           <div style="font-size:13px;font-weight:600;margin-bottom:4px">Department Report</div>
           <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">Per-department breakdown with budget utilization and cost per head</div>
           <div class="flex gap-2">
-            <button class="btn btn-sm btn-primary">Export PDF</button>
-            <button class="btn btn-sm">CSV</button>
+            <button class="btn btn-sm btn-primary"><span>Export PDF</span></button>
+            <button class="btn btn-sm"><span>CSV</span></button>
           </div>
         </div>
       </div>
@@ -2450,30 +2459,30 @@ tbody tr {
           <div style="font-size:13px;font-weight:600;margin-bottom:4px">Vendor Report</div>
           <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">Top vendors, spend trends, flagged vendors, invoice history</div>
           <div class="flex gap-2">
-            <button class="btn btn-sm btn-primary">Export PDF</button>
-            <button class="btn btn-sm">CSV</button>
+            <button class="btn btn-sm btn-primary"><span>Export PDF</span></button>
+            <button class="btn btn-sm"><span>CSV</span></button>
           </div>
         </div>
       </div>
       <div class="card" style="cursor:pointer">
         <div class="p-4">
-          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">↺</div>
+          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">R</div>
           <div style="font-size:13px;font-weight:600;margin-bottom:4px">Subscription Waste Report</div>
           <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">Unused tools, waste analysis, cancellation recommendations</div>
           <div class="flex gap-2">
-            <button class="btn btn-sm btn-primary">Export PDF</button>
-            <button class="btn btn-sm">CSV</button>
+            <button class="btn btn-sm btn-primary"><span>Export PDF</span></button>
+            <button class="btn btn-sm"><span>CSV</span></button>
           </div>
         </div>
       </div>
       <div class="card" style="cursor:pointer">
         <div class="p-4">
-          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">▤</div>
+          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">=</div>
           <div style="font-size:13px;font-weight:600;margin-bottom:4px">Budget vs Actual</div>
           <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">Variance analysis across all departments with alerts for overruns</div>
           <div class="flex gap-2">
-            <button class="btn btn-sm btn-primary">Export PDF</button>
-            <button class="btn btn-sm">CSV</button>
+            <button class="btn btn-sm btn-primary"><span>Export PDF</span></button>
+            <button class="btn btn-sm"><span>CSV</span></button>
           </div>
         </div>
       </div>
@@ -2483,19 +2492,19 @@ tbody tr {
           <div style="font-size:13px;font-weight:600;margin-bottom:4px">Forecast Report</div>
           <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">Next 3-month predicted spend, burn rate, and budget risk analysis</div>
           <div class="flex gap-2">
-            <button class="btn btn-sm btn-primary">Export PDF</button>
-            <button class="btn btn-sm">CSV</button>
+            <button class="btn btn-sm btn-primary"><span>Export PDF</span></button>
+            <button class="btn btn-sm"><span>CSV</span></button>
           </div>
         </div>
       </div>
       <div class="card" style="cursor:pointer">
         <div class="p-4">
-          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">⚠</div>
+          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">!</div>
           <div style="font-size:13px;font-weight:600;margin-bottom:4px">Anomaly Report</div>
           <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">All flagged transactions, duplicates, unusual spend with audit trail</div>
           <div class="flex gap-2">
-            <button class="btn btn-sm btn-primary">Export PDF</button>
-            <button class="btn btn-sm">CSV</button>
+            <button class="btn btn-sm btn-primary"><span>Export PDF</span></button>
+            <button class="btn btn-sm"><span>CSV</span></button>
           </div>
         </div>
       </div>
@@ -2523,7 +2532,7 @@ tbody tr {
         <div class="card">
           <div class="card-header" style="border-bottom:1px solid var(--border);padding-bottom:var(--s4)">
             <div class="card-title">Profile Settings</div>
-            <button class="btn btn-primary">Save changes</button>
+            <button class="btn btn-primary"><span>Save changes</span></button>
           </div>
           <div class="p-4" style="display:flex;flex-direction:column;gap:var(--s4)">
             <div class="row">
@@ -2574,8 +2583,8 @@ tbody tr {
               <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Live API Key</div>
               <div class="flex gap-2">
                 <input class="input" value="cf_live_••••••••••••••••••••••••" readonly style="font-family:var(--mono);font-size:12px;color:var(--text2)"/>
-                <button class="btn btn-sm">Show</button>
-                <button class="btn btn-sm">Rotate</button>
+                <button class="btn btn-sm"><span>Show</span></button>
+                <button class="btn btn-sm"><span>Rotate</span></button>
               </div>
             </div>
           </div>
@@ -2642,7 +2651,7 @@ tbody tr {
   <div class="drawer-actions">
     <button class="btn btn-danger" onclick="closeDrawer()">Flag Transaction</button>
     <button class="btn" onclick="closeDrawer()">Mark Reviewed</button>
-    <button class="btn btn-ai" onclick="closeDrawer()">◈ Ask AI</button>
+    <button class="btn btn-ai" onclick="closeDrawer()">✦ Ask AI</button>
   </div>
 </div>
 
@@ -2758,7 +2767,7 @@ tbody tr {
 <div class="confirm-modal-overlay" id="confirm-modal">
   <div class="confirm-modal">
     <div class="confirm-modal-body">
-      <div class="confirm-modal-icon" id="confirm-icon" style="background:var(--danger-bg);margin:0 auto var(--s3)">⚠️</div>
+      <div class="confirm-modal-icon" id="confirm-icon" style="background:var(--danger-bg);margin:0 auto var(--s3)">!️</div>
       <div class="confirm-modal-title" id="confirm-title">Are you sure?</div>
       <div class="confirm-modal-text" id="confirm-text">This action cannot be undone.</div>
       <div class="confirm-modal-actions">
@@ -2995,7 +3004,7 @@ async function renderTransactions() {
       <td class="mono text3">${t.invoice_number || '-'}</td>
       <td><span class="badge ${statusClass}">${t.review_status || 'pending'}</span></td>
       <td class="${receiptClass}" style="font-size:12px;font-weight:500">${receiptStatus}</td>
-      <td><button class="btn btn-sm">View</button></td>
+      <td><button class="btn btn-sm"><span>View</span></button></td>
     </tr>`;
   });
 }
@@ -3044,7 +3053,7 @@ async function sendChat() {
   msgs.scrollTop = msgs.scrollHeight;
 
   const loadingId = 'loading-' + Date.now();
-  msgs.innerHTML += `<div class="chat-msg" id="${loadingId}"><div class="chat-avatar" style="background:var(--accent-bg);color:var(--accent)">AI</div><div class="chat-bubble" style="opacity:0.7">◈ Thinking...</div></div>`;
+  msgs.innerHTML += `<div class="chat-msg" id="${loadingId}"><div class="chat-avatar" style="background:var(--accent-bg);color:var(--accent)">AI</div><div class="chat-bubble" style="opacity:0.7">✦ Thinking...</div></div>`;
   msgs.scrollTop = msgs.scrollHeight;
 
   try {
@@ -3068,6 +3077,63 @@ async function sendChat() {
 // ══════════════════════════════════════════
 // UPLOAD SIMULATE
 // ══════════════════════════════════════════
+document.querySelectorAll('.btn-ai').forEach(btn => {
+  if (btn.innerText.includes('Process with AI')) {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      
+      const file = selectedFile;
+      if (!file) {
+        showToast('Please select a file first', 'warning');
+        return;
+      }
+
+      // Start processing UI
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span>Processing...</span>';
+      btn.style.opacity = '0.7';
+      btn.style.pointerEvents = 'none';
+      
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        let endpoint = '/upload/csv';
+        if (file.name.toLowerCase().endsWith('.csv')) {
+          endpoint = '/upload/csv';
+        } else {
+          endpoint = '/upload/receipt';
+        }
+
+        const result = await fetchAPI(endpoint, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (result && (result.status === 'success' || result.transactions)) {
+          showToast(`File processed successfully! ${result.transactions ? result.transactions.length : ''} transactions added.`, 'success');
+          // Refresh global data
+          renderDashboard();
+          renderTransactions();
+          renderAnomalies();
+          
+          // Switch to dashboard after a delay
+          setTimeout(() => switchPage('dashboard'), 1500);
+        } else {
+          throw new Error(result?.detail || 'Analysis failed');
+        }
+      } catch (err) {
+        console.error('Upload error:', err);
+        showToast(`Processing failed: ${err.message}`, 'error');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      }
+    });
+  }
+});
+
 function simulateUpload() {
   const dz = document.getElementById('dropzone');
   dz.style.borderColor = 'var(--accent)';
@@ -3191,65 +3257,7 @@ function closeErrorDialog() {
   document.getElementById('error-dialog-overlay').classList.remove('open');
 }
 
-// Wire "Process with AI" button to actually upload
-document.querySelectorAll('.btn-ai').forEach(btn => {
-  if (btn.textContent.includes('Process with AI')) {
-    btn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      if (!selectedFile) {
-        showErrorDialog('No File Selected', 'Please click the dropzone area to select a file first.', 'ERR_NO_FILE');
-        return;
-      }
-
-      // Start processing UI
-      btn.textContent = '◈ Processing...';
-      btn.style.opacity = '0.7';
-      btn.style.pointerEvents = 'none';
-      
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      let endpoint = '/upload/csv';
-      if (selectedFile.type.startsWith('image/') || selectedFile.name.toLowerCase().endsWith('.pdf')) {
-        endpoint = '/upload/receipt';
-      }
-      
-      try {
-        const response = await fetch(`${API_BASE}${endpoint}`, {
-          method: 'POST',
-          body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          showErrorDialog(
-            'Upload Failed',
-            data.detail || 'Could not process the uploaded file.',
-            `HTTP ${response.status}`
-          );
-        } else {
-          showToast(`Success: ${data.message || 'File processed'}`, 'success');
-          // Refresh dashboards
-          if(typeof initDashboard === 'function') initDashboard();
-          selectedFile = null;
-          document.querySelector('.dropzone-label').textContent = 'Drag & drop a file here';
-          document.querySelector('.dropzone-sub').textContent = 'or click to browse from your computer (Max 10MB CSV/Images)';
-        }
-      } catch (err) {
-        showErrorDialog(
-          'Network Error',
-          'Failed to connect to the backend API. Please make sure the backend is live.',
-          'ERR_FETCH_FAILED'
-        );
-      } finally {
-        btn.textContent = '◈ Process with AI →';
-        btn.style.opacity = '1';
-        btn.style.pointerEvents = 'auto';
-      }
-    });
-  }
-});
+// Duplicated handler removed. Main handler is located earlier in the file.
 
 // ══════════════════════════════════════════
 // LIQUID GLASS — Apply to AI elements
@@ -3281,7 +3289,7 @@ document.querySelector('.header-icon-btn[title="Notifications"]').addEventListen
 // ══════════════════════════════════════════
 function showToast(message, type = 'info', duration = 3000) {
   const container = document.getElementById('toast-container');
-  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  const icons = { success: '✓', error: '✕', warning: '!', info: 'ℹ' };
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.innerHTML = `<span style="font-size:13px">${icons[type] || 'ℹ'}</span><span>${message}</span>`;
@@ -3322,7 +3330,7 @@ let confirmCallback = null;
 function showConfirm(title, text, callback, type = 'danger') {
   document.getElementById('confirm-title').textContent = title;
   document.getElementById('confirm-text').textContent = text;
-  const icons = { danger: '⚠️', warning: '⚠️', info: 'ℹ️' };
+  const icons = { danger: '!️', warning: '!️', info: 'ℹ️' };
   const colors = { danger: 'var(--danger-bg)', warning: 'var(--warning-bg)', info: 'var(--info-bg)' };
   document.getElementById('confirm-icon').textContent = icons[type];
   document.getElementById('confirm-icon').style.background = colors[type];
@@ -3390,7 +3398,7 @@ const activityLog = [
           <div class="card-title">Activity Log</div>
           <div class="card-sub">Recent actions and events</div>
         </div>
-        <button class="btn btn-sm">View all</button>
+        <button class="btn btn-sm"><span>View all</span></button>
       </div>
       <div style="padding:var(--s4) var(--s5)">
         ${activityLog.map(a => `
