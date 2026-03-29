@@ -10,22 +10,63 @@ from routes._validators import month_bounds
 
 router = APIRouter()
 
+PAGE_SIZE = 1000
+
+
+def _fetch_all_transactions_for_month(month: str, columns: str = "*") -> list[dict]:
+    """
+    Supabase REST responses are commonly capped per request (often 1000 rows).
+    Fetch in pages so dashboard metrics/charts use full-month data.
+    """
+    start, end = month_bounds(month)
+    rows: list[dict] = []
+    offset = 0
+
+    while True:
+        resp = (
+            supabase.table("transactions")
+            .select(columns)
+            .gte("date", start)
+            .lt("date", end)
+            .range(offset, offset + PAGE_SIZE - 1)
+            .execute()
+        )
+        chunk = resp.data or []
+        rows.extend(chunk)
+        if len(chunk) < PAGE_SIZE:
+            break
+        offset += PAGE_SIZE
+
+    return rows
+
+
+def _fetch_all_open_anomalies(columns: str = "*") -> list[dict]:
+    rows: list[dict] = []
+    offset = 0
+
+    while True:
+        resp = (
+            supabase.table("anomalies")
+            .select(columns)
+            .eq("status", "open")
+            .range(offset, offset + PAGE_SIZE - 1)
+            .execute()
+        )
+        chunk = resp.data or []
+        rows.extend(chunk)
+        if len(chunk) < PAGE_SIZE:
+            break
+        offset += PAGE_SIZE
+
+    return rows
+
 
 @router.get("")
 def get_dashboard_summary(month: str = Query("2025-01", description="Month in YYYY-MM format")):
     """Returns all KPI metrics for the dashboard header cards."""
 
     # ── All transactions for the month ────────────────────────
-    start, end = month_bounds(month)
-
-    txn_resp = (
-        supabase.table("transactions")
-        .select("*")
-        .gte("date", start)
-        .lt("date", end)
-        .execute()
-    )
-    txns = txn_resp.data or []
+    txns = _fetch_all_transactions_for_month(month, "*")
 
     total_spend = sum(t["amount"] for t in txns)
     txn_count   = len(txns)
@@ -41,13 +82,7 @@ def get_dashboard_summary(month: str = Query("2025-01", description="Month in YY
     budget_remaining = total_budget - total_spend
 
     # ── Open anomalies ─────────────────────────────────────────
-    anom_resp = (
-        supabase.table("anomalies")
-        .select("*")
-        .eq("status", "open")
-        .execute()
-    )
-    anomalies = anom_resp.data or []
+    anomalies = _fetch_all_open_anomalies("*")
     critical_count = sum(1 for a in anomalies if a["severity"] == "critical")
 
     # ── Vendor with highest spend ──────────────────────────────
@@ -103,17 +138,9 @@ def get_dashboard_summary(month: str = Query("2025-01", description="Month in YY
 @router.get("/spend-by-category")
 def spend_by_category(month: str = Query("2025-01")):
     """Returns spend aggregated by category — used for donut/bar charts."""
-    start, end = month_bounds(month)
-
-    resp = (
-        supabase.table("transactions")
-        .select("category,amount")
-        .gte("date", start)
-        .lt("date", end)
-        .execute()
-    )
+    txns = _fetch_all_transactions_for_month(month, "category,amount")
     agg: dict[str, float] = {}
-    for t in (resp.data or []):
+    for t in txns:
         agg[t["category"]] = agg.get(t["category"], 0) + t["amount"]
 
     total = sum(agg.values())
@@ -128,15 +155,7 @@ def spend_by_category(month: str = Query("2025-01")):
 @router.get("/spend-by-dept")
 def spend_by_dept(month: str = Query("2025-01")):
     """Returns spend + budget per department — used for grouped bar chart."""
-    start, end = month_bounds(month)
-
-    txn_resp = (
-        supabase.table("transactions")
-        .select("department,amount")
-        .gte("date", start)
-        .lt("date", end)
-        .execute()
-    )
+    txns = _fetch_all_transactions_for_month(month, "department,amount")
     budget_resp = (
         supabase.table("budgets")
         .select("department,budget_amount")
@@ -145,7 +164,7 @@ def spend_by_dept(month: str = Query("2025-01")):
     )
 
     spend: dict[str, float] = {}
-    for t in (txn_resp.data or []):
+    for t in txns:
         spend[t["department"]] = spend.get(t["department"], 0) + t["amount"]
 
     budget: dict[str, float] = {b["department"]: b["budget_amount"] for b in (budget_resp.data or [])}
@@ -165,21 +184,12 @@ def spend_by_dept(month: str = Query("2025-01")):
 @router.get("/trend")
 def spend_trend(month: str = Query("2025-01")):
     """Returns daily cumulative and daily spend — used for trend line chart."""
-    start, end = month_bounds(month)
-
-    resp = (
-        supabase.table("transactions")
-        .select("date,amount,category")
-        .gte("date", start)
-        .lt("date", end)
-        .order("date")
-        .execute()
-    )
+    txns = _fetch_all_transactions_for_month(month, "date,amount,category")
 
     daily: dict[str, float] = {}
     by_cat: dict[str, dict[str, float]] = {}  # cat → {date → amount}
 
-    for t in (resp.data or []):
+    for t in txns:
         d = t["date"][:10]
         daily[d] = daily.get(d, 0) + t["amount"]
         cat = t["category"]
