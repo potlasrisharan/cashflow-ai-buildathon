@@ -2800,8 +2800,9 @@ document.querySelectorAll('.nav-item[data-page]').forEach(item => {
 // ══════════════════════════════════════════
 // API INTEGRATION & DATA HYDRATION
 // ══════════════════════════════════════════
-const API_BASE = 'http://127.0.0.1:8000/api';
+const API_BASE = 'https://cashflow-api-dedx.onrender.com/api';
 
+let selectedFile = null;
 const C = {
   accent:  '#4F7CFF',
   success: '#22C55E',
@@ -3072,6 +3073,25 @@ function simulateUpload() {
   dz.style.borderColor = 'var(--accent)';
   dz.style.background = 'var(--accent-bg)';
   setTimeout(() => { dz.style.borderColor = ''; dz.style.background = ''; }, 600);
+  
+  let fileInput = document.getElementById('csv-file-input');
+  if (!fileInput) {
+    fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = 'csv-file-input';
+    fileInput.accept = '.csv, image/*, .pdf';
+    fileInput.style.display = 'none';
+    fileInput.onchange = (e) => {
+      selectedFile = e.target.files[0];
+      if (selectedFile) {
+        document.querySelector('.dropzone-label').textContent = selectedFile.name;
+        document.querySelector('.dropzone-sub').textContent = 'Ready to process';
+        showToast('File loaded. Click Process with AI', 'info');
+      }
+    };
+    document.body.appendChild(fileInput);
+  }
+  fileInput.click();
 }
 
 // Period tabs on dashboard
@@ -3171,25 +3191,62 @@ function closeErrorDialog() {
   document.getElementById('error-dialog-overlay').classList.remove('open');
 }
 
-// Wire "Process with AI" button to simulate error
+// Wire "Process with AI" button to actually upload
 document.querySelectorAll('.btn-ai').forEach(btn => {
   if (btn.textContent.includes('Process with AI')) {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.preventDefault();
-      // Simulate processing then error
+      if (!selectedFile) {
+        showErrorDialog('No File Selected', 'Please click the dropzone area to select a file first.', 'ERR_NO_FILE');
+        return;
+      }
+
+      // Start processing UI
       btn.textContent = '◈ Processing...';
       btn.style.opacity = '0.7';
       btn.style.pointerEvents = 'none';
-      setTimeout(() => {
+      
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      let endpoint = '/upload/csv';
+      if (selectedFile.type.startsWith('image/') || selectedFile.name.toLowerCase().endsWith('.pdf')) {
+        endpoint = '/upload/receipt';
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          showErrorDialog(
+            'Upload Failed',
+            data.detail || 'Could not process the uploaded file.',
+            `HTTP ${response.status}`
+          );
+        } else {
+          showToast(`Success: ${data.message || 'File processed'}`, 'success');
+          // Refresh dashboards
+          if(typeof initDashboard === 'function') initDashboard();
+          selectedFile = null;
+          document.querySelector('.dropzone-label').textContent = 'Drag & drop a file here';
+          document.querySelector('.dropzone-sub').textContent = 'or click to browse from your computer (Max 10MB CSV/Images)';
+        }
+      } catch (err) {
+        showErrorDialog(
+          'Network Error',
+          'Failed to connect to the backend API. Please make sure the backend is live.',
+          'ERR_FETCH_FAILED'
+        );
+      } finally {
         btn.textContent = '◈ Process with AI →';
         btn.style.opacity = '1';
         btn.style.pointerEvents = 'auto';
-        showErrorDialog(
-          'AI Processing Failed',
-          'The AI categorization engine could not process your uploaded file. The file may be corrupted, exceed the 10MB limit, or contain an unsupported format.',
-          'ERR_AI_PARSE_FAILED — Model timeout after 30s'
-        );
-      }, 1500);
+      }
     });
   }
 });
