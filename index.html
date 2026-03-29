@@ -669,6 +669,8 @@ tbody tr:hover td {
 .btn-ai span { 
   position: relative; 
   z-index: 2; 
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
 }
 .btn-ai:hover {
   box-shadow: 0 0 20px rgba(79,124,255,0.4), 0 0 8px rgba(139,92,246,0.3);
@@ -691,6 +693,15 @@ tbody tr:hover td {
 }
 .btn-ai:hover::after {
   transform: translateX(100%);
+}
+#chat-send-btn {
+  min-width: 72px;
+  justify-content: center;
+}
+#chat-send-btn span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ─── IMPROVEMENT 3: Floating Action Menu ─── */
@@ -1509,7 +1520,7 @@ tbody tr {
       <span style="color:var(--text3);font-size:12px">⌕</span>
       <input type="text" placeholder="Search transactions, vendors..."/>
     </div>
-    <select class="period-select">
+    <select class="period-select" id="global-period-select">
       <option>January 2025</option>
       <option>December 2024</option>
       <option>Q4 2024</option>
@@ -1592,7 +1603,7 @@ tbody tr {
               <div class="card-sub">Daily spend — January 2025</div>
             </div>
             <div class="flex gap-2">
-              <button class="btn btn-sm"><span>CSV</span></button>
+              <button class="btn btn-sm" id="dashboard-trend-export-csv-btn"><span>CSV</span></button>
             </div>
           </div>
           <div class="p-4" style="padding-top:0">
@@ -1676,44 +1687,9 @@ tbody tr {
         <div class="card">
           <div class="card-header">
             <div class="card-title">Anomaly Alerts</div>
-            <span class="badge badge-critical">4 open</span>
+            <span class="badge badge-critical" id="dashboard-anomaly-open-badge">0 open</span>
           </div>
-          <div class="anomaly-row">
-            <div class="anomaly-dot" style="background:var(--danger)"></div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:500">Unknown Vendor TX</div>
-              <div class="text-sm color-text2">6× avg spend · no PO match</div>
-            </div>
-            <span class="font-mono text-sm">₹50,000</span>
-            <span class="badge badge-critical">Critical</span>
-          </div>
-          <div class="anomaly-row">
-            <div class="anomaly-dot" style="background:var(--danger)"></div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:500">Invoice #INV-2291</div>
-              <div class="text-sm color-text2">Duplicate payment detected</div>
-            </div>
-            <span class="font-mono text-sm">₹18,400</span>
-            <span class="badge badge-critical">Critical</span>
-          </div>
-          <div class="anomaly-row">
-            <div class="anomaly-dot" style="background:var(--warning)"></div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:500">AWS Cloud spike</div>
-              <div class="text-sm color-text2">+180% vs 3-month avg</div>
-            </div>
-            <span class="font-mono text-sm">₹22,000</span>
-            <span class="badge badge-warning">Warning</span>
-          </div>
-          <div class="anomaly-row">
-            <div class="anomaly-dot" style="background:var(--accent)"></div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:500">Missing receipt — Ravi K.</div>
-              <div class="text-sm color-text2">T&E claim >₹5k without receipt</div>
-            </div>
-            <span class="font-mono text-sm">₹3,800</span>
-            <span class="badge badge-info">Info</span>
-          </div>
+          <div id="dashboard-anomaly-list"></div>
         </div>
       </div>
 
@@ -1791,7 +1767,7 @@ tbody tr {
     <div class="section-hd mb-4">
       <div>
         <div class="section-title" style="font-size:14px">All Transactions</div>
-        <div class="text-sm color-text2 mt-3" style="margin-top:4px">342 transactions · January 2025</div>
+        <div class="text-sm color-text2 mt-3" style="margin-top:4px" id="transactions-summary-text">0 transactions · January 2025</div>
       </div>
       <div class="section-actions">
         <input class="input" style="width:200px" placeholder="Search vendor, category..."/>
@@ -1805,7 +1781,7 @@ tbody tr {
           <option>Engineering</option><option>Marketing</option>
           <option>Sales</option><option>HR</option>
         </select>
-        <button class="btn"><span>Export CSV</span></button>
+        <button class="btn" id="transactions-export-csv-btn"><span>Export CSV</span></button>
         <button class="btn btn-primary"><span>+ Add</span></button>
       </div>
     </div>
@@ -1976,86 +1952,13 @@ tbody tr {
     <div class="section-hd mb-4">
       <div class="section-title" style="font-size:14px">Anomaly Detection</div>
       <div class="section-actions">
-        <span class="badge badge-critical">2 Critical</span>
-        <span class="badge badge-warning">1 Warning</span>
-        <span class="badge badge-info">1 Info</span>
+        <span class="badge badge-critical" id="anomalies-count-critical">0 Critical</span>
+        <span class="badge badge-warning" id="anomalies-count-warning">0 Warning</span>
+        <span class="badge badge-info" id="anomalies-count-info">0 Info</span>
         <button class="btn"><span>Mark All Reviewed</span></button>
       </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:var(--s3)">
-      <div class="card">
-        <div class="p-4" style="display:flex;align-items:center;gap:var(--s4)">
-          <span class="badge badge-critical" style="padding:6px 10px;font-size:12px">CRITICAL</span>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Unknown Vendor — No PO Match</div>
-            <div class="text-sm color-text2">Vendor "ABC Trading Pvt Ltd" charged ₹50,000 on 12 Jan. 6× your average vendor payment. No purchase order found. Vendor not in approved list.</div>
-            <div class="text-sm color-text2 mt-3" style="margin-top:6px">Flagged: Jan 12, 2025 · Dept: Operations · Payment: NEFT</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div class="font-mono" style="font-size:18px;font-weight:500;color:var(--danger)">₹50,000</div>
-            <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">Jan 12, 2025</div>
-            <div class="flex gap-2">
-              <button class="btn btn-sm btn-danger"><span>Flag</span></button>
-              <button class="btn btn-sm"><span>Approve</span></button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="p-4" style="display:flex;align-items:center;gap:var(--s4)">
-          <span class="badge badge-critical" style="padding:6px 10px;font-size:12px">CRITICAL</span>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Duplicate Invoice Detected</div>
-            <div class="text-sm color-text2">Invoice #INV-2291 from Zomato Business appears to have been paid twice — on Jan 8 and Jan 11. Amount: ₹18,400 each. Total duplicate risk: ₹18,400.</div>
-            <div class="text-sm color-text2 mt-3" style="margin-top:6px">Flagged: Jan 11, 2025 · Dept: HR &amp; Admin · Method: Credit Card</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div class="font-mono" style="font-size:18px;font-weight:500;color:var(--danger)">₹18,400</div>
-            <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">Jan 11, 2025</div>
-            <div class="flex gap-2">
-              <button class="btn btn-sm btn-danger"><span>Dispute</span></button>
-              <button class="btn btn-sm"><span>Ignore</span></button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="p-4" style="display:flex;align-items:center;gap:var(--s4)">
-          <span class="badge badge-warning" style="padding:6px 10px;font-size:12px">WARNING</span>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px">AWS Cloud Spend Spike</div>
-            <div class="text-sm color-text2">AWS billed ₹22,000 this month — 180% above your 3-month average of ₹7,850. No infrastructure change logged. Possible runaway EC2 instances or data transfer spike.</div>
-            <div class="text-sm color-text2 mt-3" style="margin-top:6px">Flagged: Jan 15, 2025 · Dept: Engineering · Category: Software</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div class="font-mono" style="font-size:18px;font-weight:500;color:var(--warning)">₹22,000</div>
-            <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">Jan 15, 2025</div>
-            <div class="flex gap-2">
-              <button class="btn btn-sm btn-danger"><span>Alert Team</span></button>
-              <button class="btn btn-sm"><span>Acknowledge</span></button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="p-4" style="display:flex;align-items:center;gap:var(--s4)">
-          <span class="badge badge-info" style="padding:6px 10px;font-size:12px">INFO</span>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Missing Receipt — T&amp;E Claim</div>
-            <div class="text-sm color-text2">Employee Ravi Kumar (Sales) submitted ₹3,800 for client dinner on Jan 9 without attaching a receipt. Company policy requires receipts for claims above ₹2,000.</div>
-            <div class="text-sm color-text2 mt-3" style="margin-top:6px">Flagged: Jan 10, 2025 · Employee: Ravi Kumar · Method: Reimbursement</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div class="font-mono" style="font-size:18px;font-weight:500">₹3,800</div>
-            <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">Jan 10, 2025</div>
-            <div class="flex gap-2">
-              <button class="btn btn-sm"><span>Request Receipt</span></button>
-              <button class="btn btn-sm"><span>Approve</span></button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div id="anomalies-list" style="display:flex;flex-direction:column;gap:var(--s3)"></div>
   </div>
 
   <!-- ══════════════════════════════════════
@@ -2068,7 +1971,7 @@ tbody tr {
         <div class="text-sm color-text2" style="margin-top:4px">28 active · ₹1,84,000/mo · ₹22,08,000/yr</div>
       </div>
       <div class="section-actions">
-        <button class="btn"><span>Export</span></button>
+        <button class="btn" id="subscriptions-export-btn"><span>Export</span></button>
         <button class="btn btn-primary"><span>+ Add Subscription</span></button>
       </div>
     </div>
@@ -2095,16 +1998,22 @@ tbody tr {
   <div class="page-content" id="page-forecasting">
     <div class="section-hd mb-4"><div class="section-title" style="font-size:14px">Spend Forecasting</div></div>
     <div class="grid-4 mb-4">
-      <div class="kpi-card"><div class="kpi-label">Predicted Spend (Feb)</div><div class="kpi-value">₹9,10,000</div><div class="kpi-delta down">↑ 8.1% projected</div><div class="kpi-note">87% confidence</div></div>
-      <div class="kpi-card"><div class="kpi-label">Burn Rate</div><div class="kpi-value">₹27,170</div><div class="kpi-delta warn">Per day</div><div class="kpi-note">31-day month</div></div>
-      <div class="kpi-card"><div class="kpi-label">Budget Risk</div><div class="kpi-value" style="color:var(--warning)">Medium</div><div class="kpi-delta warn">↑ Trending up</div><div class="kpi-note">2 depts at risk</div></div>
-      <div class="kpi-card"><div class="kpi-label">Cost Growth (MoM)</div><div class="kpi-value">+8.1%</div><div class="kpi-delta down">Accelerating</div><div class="kpi-note">Avg 3.2% past 6mo</div></div>
+      <div class="kpi-card"><div class="kpi-label">Predicted Spend (Next Month)</div><div class="kpi-value" id="forecast-predicted-spend">₹0</div><div class="kpi-delta down" id="forecast-growth">↑ 0% projected</div><div class="kpi-note" id="forecast-confidence">Confidence pending</div></div>
+      <div class="kpi-card"><div class="kpi-label">Burn Rate</div><div class="kpi-value" id="forecast-burn-rate">₹0</div><div class="kpi-delta warn">Per day</div><div class="kpi-note" id="forecast-days-note">- days in period</div></div>
+      <div class="kpi-card"><div class="kpi-label">Budget Risk</div><div class="kpi-value" id="forecast-budget-risk" style="color:var(--warning)">Low</div><div class="kpi-delta warn" id="forecast-risk-delta">Monitoring trend</div><div class="kpi-note" id="forecast-risk-note">No variance detected</div></div>
+      <div class="kpi-card"><div class="kpi-label">Cost Growth (MoM)</div><div class="kpi-value" id="forecast-cost-growth">0%</div><div class="kpi-delta down" id="forecast-growth-delta">Stable</div><div class="kpi-note">6-month projection</div></div>
     </div>
     <div class="row mb-4">
       <div class="col" style="flex:2">
         <div class="card">
           <div class="card-header"><div class="card-title">6-Month Forecast vs Actual</div><div class="card-sub">Shaded area = confidence interval</div></div>
           <div class="p-4" style="padding-top:0"><div class="chart-box" style="height:240px"><canvas id="forecastChart"></canvas></div></div>
+          <div class="table-wrap" style="padding:0 var(--s4) var(--s4)">
+            <table>
+              <thead><tr><th>Month</th><th>Actual</th><th>Forecast</th><th>Variance</th></tr></thead>
+              <tbody id="forecast-table-body"></tbody>
+            </table>
+          </div>
         </div>
       </div>
       <div class="col">
@@ -2249,7 +2158,7 @@ tbody tr {
           </div>
           <div class="chat-input-row">
             <input class="input" id="chat-input" placeholder="Ask about your finances..." style="flex:1" onkeydown="if(event.key==='Enter')sendChat()"/>
-            <button class="btn btn-ai btn-sm" onclick="sendChat()">✦ Send</button>
+            <button class="btn btn-ai btn-sm" id="chat-send-btn" onclick="sendChat()"><span>Send</span></button>
           </div>
         </div>
       </div>
@@ -2263,15 +2172,15 @@ tbody tr {
     <div class="section-hd mb-4">
       <div class="section-title" style="font-size:14px">Budget Management</div>
       <div class="section-actions">
-        <button class="btn"><span>Export</span></button>
+        <button class="btn" id="budgets-export-btn"><span>Export</span></button>
         <button class="btn btn-primary"><span>+ Set Budget</span></button>
       </div>
     </div>
     <div class="grid-4 mb-4">
-      <div class="kpi-card"><div class="kpi-label">Total Budget</div><div class="kpi-value">₹10,00,000</div><div class="kpi-note">January 2025</div></div>
-      <div class="kpi-card"><div class="kpi-label">Total Spent</div><div class="kpi-value">₹8,42,300</div><div class="kpi-delta down">84.2% utilized</div></div>
-      <div class="kpi-card"><div class="kpi-label">Remaining</div><div class="kpi-value">₹1,57,700</div><div class="kpi-note">7 days remaining</div></div>
-      <div class="kpi-card"><div class="kpi-label">Over Budget Depts</div><div class="kpi-value" style="color:var(--danger)">2</div><div class="kpi-delta down">Sales, Infra</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Budget</div><div class="kpi-value" id="budgets-kpi-total-budget">₹0</div><div class="kpi-note" id="budgets-kpi-month-label">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Spent</div><div class="kpi-value" id="budgets-kpi-total-spent">₹0</div><div class="kpi-delta down" id="budgets-kpi-total-spent-pct">0% utilized</div></div>
+      <div class="kpi-card"><div class="kpi-label">Remaining</div><div class="kpi-value" id="budgets-kpi-remaining">₹0</div><div class="kpi-note">Updated live</div></div>
+      <div class="kpi-card"><div class="kpi-label">Over Budget Depts</div><div class="kpi-value" id="budgets-kpi-over-count" style="color:var(--danger)">0</div><div class="kpi-delta down" id="budgets-kpi-over-list">None</div></div>
     </div>
     <div class="card">
       <div class="card-header"><div class="card-title">Department Budgets</div></div>
@@ -2280,50 +2189,7 @@ tbody tr {
           <thead>
             <tr><th>Department</th><th>Budget</th><th>Spent</th><th>Remaining</th><th>%Used</th><th>Progress</th><th>Status</th></tr>
           </thead>
-          <tbody>
-            <tr>
-              <td style="font-weight:500">Engineering</td>
-              <td class="mono">₹2,50,000</td><td class="mono">₹2,10,000</td><td class="mono color-success">₹40,000</td>
-              <td class="mono">84%</td>
-              <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:84%;background:var(--success)"></div></div></td>
-              <td><span class="badge badge-success">On track</span></td>
-            </tr>
-            <tr>
-              <td style="font-weight:500">Marketing</td>
-              <td class="mono">₹2,00,000</td><td class="mono">₹1,85,000</td><td class="mono color-warning">₹15,000</td>
-              <td class="mono">92%</td>
-              <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:92%;background:var(--warning)"></div></div></td>
-              <td><span class="badge badge-warning">At risk</span></td>
-            </tr>
-            <tr>
-              <td style="font-weight:500">Sales</td>
-              <td class="mono">₹2,00,000</td><td class="mono color-danger">₹2,40,000</td><td class="mono color-danger">-₹40,000</td>
-              <td class="mono color-danger">120%</td>
-              <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:100%;background:var(--danger)"></div></div></td>
-              <td><span class="badge badge-critical">Over budget</span></td>
-            </tr>
-            <tr>
-              <td style="font-weight:500">Operations</td>
-              <td class="mono">₹1,50,000</td><td class="mono">₹1,10,000</td><td class="mono color-success">₹40,000</td>
-              <td class="mono">73%</td>
-              <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:73%;background:var(--accent)"></div></div></td>
-              <td><span class="badge badge-success">On track</span></td>
-            </tr>
-            <tr>
-              <td style="font-weight:500">Infrastructure</td>
-              <td class="mono">₹75,000</td><td class="mono color-danger">₹80,000</td><td class="mono color-danger">-₹5,000</td>
-              <td class="mono color-danger">107%</td>
-              <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:100%;background:var(--danger)"></div></div></td>
-              <td><span class="badge badge-critical">Over budget</span></td>
-            </tr>
-            <tr>
-              <td style="font-weight:500">HR &amp; Admin</td>
-              <td class="mono">₹1,00,000</td><td class="mono">₹60,000</td><td class="mono color-success">₹40,000</td>
-              <td class="mono">60%</td>
-              <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:60%;background:var(--success)"></div></div></td>
-              <td><span class="badge badge-success">Under budget</span></td>
-            </tr>
-          </tbody>
+          <tbody id="budgets-tbody"></tbody>
         </table>
       </div>
     </div>
@@ -2336,7 +2202,7 @@ tbody tr {
     <div class="section-hd mb-4">
       <div class="section-title" style="font-size:14px">Vendor Analytics</div>
       <div class="section-actions">
-        <button class="btn"><span>Export</span></button>
+        <button class="btn" id="vendors-export-btn"><span>Export</span></button>
         <button class="btn btn-primary"><span>+ Add Vendor</span></button>
       </div>
     </div>
@@ -2351,15 +2217,15 @@ tbody tr {
         <div class="card">
           <div class="card-header"><div class="card-title">Vendor Summary</div></div>
           <div class="p-4" style="padding-top:0;display:flex;flex-direction:column;gap:var(--s3)">
-            <div class="flex justify-between"><span class="text-sm color-text2">Total vendors</span><span class="font-mono text-sm">48</span></div>
+            <div class="flex justify-between"><span class="text-sm color-text2">Total vendors</span><span class="font-mono text-sm" id="vendors-total">0</span></div>
             <div class="divider"></div>
-            <div class="flex justify-between"><span class="text-sm color-text2">Approved vendors</span><span class="font-mono text-sm color-success">44</span></div>
+            <div class="flex justify-between"><span class="text-sm color-text2">Approved vendors</span><span class="font-mono text-sm color-success" id="vendors-approved">0</span></div>
             <div class="divider"></div>
-            <div class="flex justify-between"><span class="text-sm color-text2">Flagged vendors</span><span class="font-mono text-sm color-danger">2</span></div>
+            <div class="flex justify-between"><span class="text-sm color-text2">Flagged vendors</span><span class="font-mono text-sm color-danger" id="vendors-flagged">0</span></div>
             <div class="divider"></div>
-            <div class="flex justify-between"><span class="text-sm color-text2">New this month</span><span class="font-mono text-sm">3</span></div>
+            <div class="flex justify-between"><span class="text-sm color-text2">New this month</span><span class="font-mono text-sm" id="vendors-new">0</span></div>
             <div class="divider"></div>
-            <div class="flex justify-between"><span class="text-sm color-text2">Top vendor</span><span class="font-mono text-sm">AWS Cloud</span></div>
+            <div class="flex justify-between"><span class="text-sm color-text2">Top vendor</span><span class="font-mono text-sm" id="vendors-top">-</span></div>
           </div>
         </div>
       </div>
@@ -2390,14 +2256,7 @@ tbody tr {
       <div class="col">
         <div class="card">
           <div class="card-header"><div class="card-title">Utilization by Department</div></div>
-          <div class="p-4" style="padding-top:0;display:flex;flex-direction:column;gap:var(--s4)">
-            <div><div class="flex justify-between mb-2" style="margin-bottom:6px"><span class="text-sm font-mono">Engineering</span><span class="text-sm color-text2">₹2,10,000</span></div><div class="progress-track"><div class="progress-fill" style="width:84%;background:var(--success)"></div></div></div>
-            <div><div class="flex justify-between mb-2" style="margin-bottom:6px"><span class="text-sm font-mono">Sales</span><span class="text-sm color-danger">₹2,40,000</span></div><div class="progress-track"><div class="progress-fill" style="width:100%;background:var(--danger)"></div></div></div>
-            <div><div class="flex justify-between mb-2" style="margin-bottom:6px"><span class="text-sm font-mono">Marketing</span><span class="text-sm color-text2">₹1,85,000</span></div><div class="progress-track"><div class="progress-fill" style="width:92%;background:var(--warning)"></div></div></div>
-            <div><div class="flex justify-between mb-2" style="margin-bottom:6px"><span class="text-sm font-mono">Operations</span><span class="text-sm color-text2">₹1,10,000</span></div><div class="progress-track"><div class="progress-fill" style="width:73%;background:var(--accent)"></div></div></div>
-            <div><div class="flex justify-between mb-2" style="margin-bottom:6px"><span class="text-sm font-mono">HR &amp; Admin</span><span class="text-sm color-text2">₹60,000</span></div><div class="progress-track"><div class="progress-fill" style="width:60%;background:var(--success)"></div></div></div>
-            <div><div class="flex justify-between mb-2" style="margin-bottom:6px"><span class="text-sm font-mono">Infrastructure</span><span class="text-sm color-danger">₹80,000</span></div><div class="progress-track"><div class="progress-fill" style="width:100%;background:var(--danger)"></div></div></div>
-          </div>
+          <div class="p-4" id="departments-utilization-list" style="padding-top:0;display:flex;flex-direction:column;gap:var(--s4)"></div>
         </div>
       </div>
     </div>
@@ -2406,13 +2265,7 @@ tbody tr {
       <div class="table-wrap">
         <table>
           <thead><tr><th>Department</th><th>Head Count</th><th>Budget</th><th>Spent</th><th>Per Head</th><th>Top Category</th><th>Status</th></tr></thead>
-          <tbody>
-            <tr><td style="font-weight:500">Engineering</td><td class="mono">24</td><td class="mono">₹2,50,000</td><td class="mono">₹2,10,000</td><td class="mono">₹8,750</td><td><span class="badge badge-info">Software</span></td><td><span class="badge badge-success">On track</span></td></tr>
-            <tr><td style="font-weight:500">Sales</td><td class="mono">18</td><td class="mono">₹2,00,000</td><td class="mono color-danger">₹2,40,000</td><td class="mono">₹13,333</td><td><span class="badge badge-info">Travel</span></td><td><span class="badge badge-critical">Over budget</span></td></tr>
-            <tr><td style="font-weight:500">Marketing</td><td class="mono">12</td><td class="mono">₹2,00,000</td><td class="mono">₹1,85,000</td><td class="mono">₹15,416</td><td><span class="badge badge-info">Marketing</span></td><td><span class="badge badge-warning">At risk</span></td></tr>
-            <tr><td style="font-weight:500">Operations</td><td class="mono">8</td><td class="mono">₹1,50,000</td><td class="mono">₹1,10,000</td><td class="mono">₹13,750</td><td><span class="badge badge-info">Vendors</span></td><td><span class="badge badge-success">On track</span></td></tr>
-            <tr><td style="font-weight:500">HR &amp; Admin</td><td class="mono">6</td><td class="mono">₹1,00,000</td><td class="mono">₹60,000</td><td class="mono">₹10,000</td><td><span class="badge badge-info">Office</span></td><td><span class="badge badge-success">Under budget</span></td></tr>
-          </tbody>
+          <tbody id="departments-tbody"></tbody>
         </table>
       </div>
     </div>
@@ -2425,8 +2278,8 @@ tbody tr {
     <div class="section-hd mb-4">
       <div class="section-title" style="font-size:14px">Reports</div>
       <div class="section-actions">
-        <button class="btn"><span>Export PDF</span></button>
-        <button class="btn"><span>Export CSV</span></button>
+        <button class="btn" id="reports-export-pdf-btn"><span>Export PDF</span></button>
+        <button class="btn" id="reports-export-csv-btn"><span>Export CSV</span></button>
         <button class="btn btn-primary"><span>Email Report</span></button>
       </div>
     </div>
@@ -2664,25 +2517,25 @@ tbody tr {
       <h3>Add Transaction</h3>
       <button class="drawer-close" onclick="closeModal('modal-add-txn')">✕</button>
     </div>
-    <div class="modal-body" style="display:flex;flex-direction:column;gap:var(--s4)">
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:var(--s4)">
       <div class="row">
-        <div class="col"><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Vendor</div><input class="input" placeholder="Vendor name"/></div>
-        <div class="col"><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Amount (₹)</div><input class="input" placeholder="0.00" style="font-family:var(--mono)"/></div>
+        <div class="col"><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Vendor</div><input class="input" id="add-txn-vendor" placeholder="Vendor name"/></div>
+        <div class="col"><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Amount (₹)</div><input class="input" id="add-txn-amount" placeholder="0.00" style="font-family:var(--mono)"/></div>
       </div>
       <div class="row">
         <div class="col"><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Category</div>
-          <select class="period-select" style="width:100%"><option>Software</option><option>Marketing</option><option>Travel</option><option>Office</option><option>Equipment</option><option>Vendors</option></select>
+          <select class="period-select" id="add-txn-category" style="width:100%"><option>Software</option><option>Marketing</option><option>Travel</option><option>Office</option><option>Equipment</option><option>Vendors</option></select>
         </div>
         <div class="col"><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Department</div>
-          <select class="period-select" style="width:100%"><option>Engineering</option><option>Sales</option><option>Marketing</option><option>Operations</option><option>HR & Admin</option></select>
+          <select class="period-select" id="add-txn-department" style="width:100%"><option>Engineering</option><option>Sales</option><option>Marketing</option><option>Operations</option><option>HR & Admin</option></select>
         </div>
       </div>
-      <div><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Date</div><input class="input" type="date"/></div>
-      <div><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Notes</div><input class="input" placeholder="Optional notes..."/></div>
+      <div><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Date</div><input class="input" id="add-txn-date" type="date"/></div>
+      <div><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Notes</div><input class="input" id="add-txn-notes" placeholder="Optional notes..."/></div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('modal-add-txn')">Cancel</button>
-      <button class="btn btn-primary" onclick="closeModal('modal-add-txn')">Add Transaction</button>
+      <button class="btn btn-primary" id="add-txn-submit">Add Transaction</button>
     </div>
   </div>
 </div>
@@ -2839,6 +2692,7 @@ console.info(`[CashFlow AI] build=${FRONTEND_BUILD} host=${window.location.host}
 
 let selectedFile = null;
 const CHART_REGISTRY = {};
+let AVAILABLE_MONTHS = [];
 const C = {
   accent:  '#4F7CFF',
   success: '#22C55E',
@@ -2912,16 +2766,230 @@ async function fetchAPI(endpoint, method = 'GET', body = null) {
   }
 }
 
+const MONTH_MAP = {
+  january: '01',
+  february: '02',
+  march: '03',
+  april: '04',
+  may: '05',
+  june: '06',
+  july: '07',
+  august: '08',
+  september: '09',
+  october: '10',
+  november: '11',
+  december: '12',
+};
+
+function parseMonthValue(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (/^\d{4}-\d{2}$/.test(raw)) return raw;
+  const match = raw.match(/^([a-z]+)\s+(\d{4})$/i);
+  if (match) {
+    const month = MONTH_MAP[match[1]];
+    if (month) return `${match[2]}-${month}`;
+  }
+  return '';
+}
+
+function toNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function monthDisplayLabel(monthIso) {
+  if (!/^\d{4}-\d{2}$/.test(monthIso || '')) return monthIso || 'January 2025';
+  const [year, month] = monthIso.split('-').map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+async function hydrateMonthOptions(preferredMonth = null) {
+  const selector = document.getElementById('global-period-select');
+  if (!selector) return;
+
+  const currentMonth = preferredMonth || parseMonthValue(selector.value) || AVAILABLE_MONTHS[0] || '';
+
+  try {
+    const resp = await fetchAPI('/summary/months');
+    const months = Array.isArray(resp?.months)
+      ? resp.months.filter((month) => /^\d{4}-\d{2}$/.test(String(month)))
+      : [];
+    if (!months.length) return;
+
+    AVAILABLE_MONTHS = months;
+    selector.innerHTML = months
+      .map((month) => `<option value="${escapeHTML(month)}">${escapeHTML(monthDisplayLabel(month))}</option>`)
+      .join('');
+    selector.value = months.includes(currentMonth) ? currentMonth : months[0];
+  } catch (err) {
+    console.warn('Failed to hydrate month options:', err);
+  }
+}
+
+function getSelectedMonthParam() {
+  const selector = document.getElementById('global-period-select');
+  return parseMonthValue(selector?.value || '') || AVAILABLE_MONTHS[0] || '2025-01';
+}
+
+function getSelectedMonthLabel() {
+  const selector = document.getElementById('global-period-select');
+  const optionText = selector?.selectedOptions?.[0]?.textContent?.trim();
+  if (optionText) return optionText;
+  const parsed = parseMonthValue(selector?.value || '');
+  return parsed ? monthDisplayLabel(parsed) : 'January 2025';
+}
+
+function monthLabelFromIso(monthIso) {
+  if (!monthIso || !/^\d{4}-\d{2}$/.test(monthIso)) return monthIso || '-';
+  const [year, mm] = monthIso.split('-');
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const idx = Math.max(1, Math.min(12, Number(mm))) - 1;
+  return `${monthNames[idx]} ${year}`;
+}
+
+function anomalyTypeLabel(type) {
+  if (type === 'duplicate' || type === 'duplicate_invoice') return 'Duplicate Detected';
+  if (type === 'spike' || type === 'spend_spike') return 'Spend Spike';
+  if (type === 'unknown_vendor') return 'Unknown Vendor';
+  if (type === 'missing_receipt') return 'Missing Receipt';
+  return 'Anomaly';
+}
+
+function severityBadgeClass(severity) {
+  if (severity === 'critical') return 'badge-critical';
+  if (severity === 'warning') return 'badge-warning';
+  return 'badge-info';
+}
+
+function txnStatusBadgeClass(status) {
+  if (status === 'approved' || status === 'paid') return 'badge-success';
+  if (status === 'flagged' || status === 'rejected') return 'badge-critical';
+  return 'badge-warning';
+}
+
+async function fetchAllTransactions(month = null) {
+  const all = [];
+  let page = 1;
+  const perPage = 200;
+
+  while (true) {
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+    });
+    if (month) params.set('month', month);
+    const resp = await fetchAPI(`/transactions?${params.toString()}`);
+    const rows = Array.isArray(resp) ? resp : (resp?.data || []);
+    all.push(...rows);
+    if (rows.length < perPage) break;
+    page += 1;
+    if (page > 100) break;
+  }
+  return all;
+}
+
+async function fetchAllAnomalies(month = getSelectedMonthParam()) {
+  const all = [];
+  let page = 1;
+  const perPage = 200;
+
+  while (true) {
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+    });
+    if (month) params.set('month', month);
+    const resp = await fetchAPI(`/anomalies?${params.toString()}`);
+    const rows = Array.isArray(resp) ? resp : (resp?.data || []);
+    all.push(...rows);
+    if (rows.length < perPage) break;
+    page += 1;
+    if (page > 100) break;
+  }
+  return all;
+}
+
+function toCSV(rows, columns) {
+  const escape = (value) => {
+    if (value === null || value === undefined) return '';
+    const text = String(value);
+    if (text.includes(',') || text.includes('"') || text.includes('\n')) {
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+    return text;
+  };
+  const header = columns.join(',');
+  const body = rows.map((row) => columns.map((key) => escape(row[key])).join(','));
+  return [header, ...body].join('\n');
+}
+
+function downloadTextFile(filename, content, mimeType = 'text/plain;charset=utf-8') {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportCurrentPageAsPrintReport(title, lines) {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    showToast('Popup blocked. Allow popups to export PDF/print report.', 'warning');
+    return;
+  }
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>${escapeHTML(title)}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 24px; color: #0f172a; }
+          h1 { margin: 0 0 8px; font-size: 20px; }
+          p { margin: 0 0 16px; color: #334155; font-size: 13px; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+          th { background: #f1f5f9; }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHTML(title)}</h1>
+        <p>Generated: ${new Date().toLocaleString()}</p>
+        <table>
+          <tbody>
+            ${lines.map((line) => `<tr><td>${escapeHTML(line)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
 async function renderKPIs() {
-  const summary = await fetchAPI('/summary');
+  const month = getSelectedMonthParam();
+  const summary = await fetchAPI(`/summary?month=${encodeURIComponent(month)}`);
   if (!summary) return;
 
   const mnt = summary.month_data || summary;
   const prev = summary.previous_month_data;
   
   if (mnt) {
-    document.getElementById('kpi-total').textContent = formatCurrency(mnt.total_spend);
-    const mntPct = prev && prev.total_spend ? ((mnt.total_spend - prev.total_spend) / prev.total_spend * 100).toFixed(1) : 0;
+    const totalSpend = toNumber(mnt.total_spend);
+    const totalBudget = toNumber(summary.total_budget);
+    const budgetRemaining = totalBudget - totalSpend;
+    const transactionCount = toNumber(mnt.transaction_count);
+    const forecastNextMonth = toNumber(summary.forecast_next_month);
+    const topVendorAmount = toNumber(summary.top_vendor_amount);
+    const topVendorPct = toNumber(summary.top_vendor_pct);
+    const overBudgetDepts = Array.isArray(summary.depts_over_budget) ? summary.depts_over_budget : [];
+
+    document.getElementById('kpi-total').textContent = formatCurrency(totalSpend);
+    const mntPct = prev && prev.total_spend ? ((totalSpend - toNumber(prev.total_spend)) / toNumber(prev.total_spend) * 100).toFixed(1) : 0;
     const dp = document.getElementById('kpi-total-delta');
     
     // For spending, going down is good!
@@ -2933,149 +3001,368 @@ async function renderKPIs() {
       dp.className = 'kpi-delta up'; // positive style (green)
     }
     
-    document.getElementById('kpi-budget-rem').textContent = formatCurrency(Math.max(0, summary.total_budget - mnt.total_spend));
-    const budgetPct = summary.total_budget ? ((summary.total_budget - mnt.total_spend) / summary.total_budget * 100).toFixed(1) : 0;
+    document.getElementById('kpi-budget-rem').textContent = formatCurrency(budgetRemaining);
+    const budgetPct = totalBudget ? ((budgetRemaining / totalBudget) * 100).toFixed(1) : 0;
     document.getElementById('kpi-budget-pct').textContent = `${budgetPct}% left`;
-    document.getElementById('kpi-budget-pct').className = `kpi-delta ${budgetPct < 20 ? 'warn' : 'up'}`;
+    document.getElementById('kpi-budget-pct').className = `kpi-delta ${Number(budgetPct) < 20 ? 'warn' : 'up'}`;
 
-    document.getElementById('kpi-txns-count').textContent = mnt.transaction_count;
-    const avg = mnt.transaction_count ? (mnt.total_spend / mnt.transaction_count) : 0;
+    document.getElementById('kpi-txns-count').textContent = String(transactionCount);
+    const avg = transactionCount ? (totalSpend / transactionCount) : 0;
     document.getElementById('kpi-txns-avg').textContent = `Avg ${formatCurrency(avg)} per txn`;
+
+    const forecastEl = document.getElementById('kpi-forecast');
+    if (forecastEl) forecastEl.textContent = formatCurrency(forecastNextMonth);
+    const topVendorVal = document.getElementById('kpi-top-vendor-val');
+    const topVendorName = document.getElementById('kpi-top-vendor-name');
+    const topVendorPctEl = document.getElementById('kpi-top-vendor-pct');
+    if (topVendorVal) topVendorVal.textContent = formatCurrency(topVendorAmount);
+    if (topVendorName) topVendorName.textContent = summary.top_vendor || '-';
+    if (topVendorPctEl) topVendorPctEl.textContent = `${topVendorPct.toFixed(1)}% of total spend`;
+
+    const overCountEl = document.getElementById('kpi-depts-over');
+    const overDetailEl = document.getElementById('kpi-depts-detail');
+    if (overCountEl) overCountEl.textContent = String(toNumber(summary.depts_over_budget_count));
+    if (overDetailEl) overDetailEl.textContent = overBudgetDepts.length ? overBudgetDepts.join(', ') : 'None';
   }
 }
 
 async function renderCharts() {
-  const byDept = await fetchAPI('/summary/spend-by-dept');
+  const month = getSelectedMonthParam();
+  const [byDept, byCat, trend, bud, monthTxns, allTxns] = await Promise.all([
+    fetchAPI(`/summary/spend-by-dept?month=${encodeURIComponent(month)}`),
+    fetchAPI(`/summary/spend-by-category?month=${encodeURIComponent(month)}`),
+    fetchAPI(`/summary/trend?month=${encodeURIComponent(month)}`),
+    fetchAPI(`/budgets/utilization?month=${encodeURIComponent(month)}`),
+    fetchAllTransactions(month),
+    fetchAllTransactions(),
+  ]);
+
   if (byDept) {
-    const labels = Array.isArray(byDept)
-      ? byDept.map(d => d.department)
-      : (byDept.labels || []);
-    const data = Array.isArray(byDept)
-      ? byDept.map(d => d.total_spend || d.spent || 0)
-      : (byDept.spend || byDept.values || []);
-    const colors = [C.accent, C.danger, C.warning, C.success, C.purple, C.teal];
-    
-    if(document.getElementById('deptChart')) {
+    const labels = Array.isArray(byDept) ? byDept.map((d) => d.department) : (byDept.labels || []);
+    const spent = Array.isArray(byDept) ? byDept.map((d) => toNumber(d.total_spend || d.spent)) : (byDept.spend || []);
+    const budgetVals = Array.isArray(byDept) ? byDept.map((d) => toNumber(d.budget)) : (byDept.budget || []);
+    const colors = [C.accent, C.danger, C.warning, C.success, C.purple, C.teal, C.orange, C.gray];
+
+    if (document.getElementById('deptChart')) {
       upsertChart('deptChart', {
         type: 'bar',
-        data: { labels, datasets:[{label:'Spent', data, backgroundColor: colors, borderRadius:3, borderWidth:0}] },
-        options:{...baseOpts,plugins:{...baseOpts.plugins,tooltip:{...baseOpts.plugins.tooltip, callbacks:{label:c=>formatCurrency(c.parsed.y)}}}}
+        data: { labels, datasets: [{ label: 'Spent', data: spent, backgroundColor: colors, borderRadius: 3, borderWidth: 0 }] },
+        options: {
+          ...baseOpts,
+          plugins: {
+            ...baseOpts.plugins,
+            tooltip: { ...baseOpts.plugins.tooltip, callbacks: { label: (c) => formatCurrency(c.parsed.y) } },
+          },
+        },
       });
     }
 
-    if(document.getElementById('deptDistChart')) {
-      upsertChart('deptDistChart',{
-        type:'doughnut',
-        data:{ labels, datasets:[{data, backgroundColor:colors, borderWidth:0, hoverOffset:4}] },
-        options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
-          plugins:{legend:{display:true,position:'bottom',labels:{color:C.text2,font:{size:11},boxWidth:10,padding:12}},
-            tooltip:{backgroundColor:'#1b2130',borderColor:C.border,borderWidth:1,bodyColor:'#e6e8ee', callbacks:{label:c=>formatCurrency(c.parsed)}}}
-        }});
+    if (document.getElementById('deptAnalChart')) {
+      upsertChart('deptAnalChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Budget', data: budgetVals, backgroundColor: C.gray, borderRadius: 3, borderWidth: 0 },
+            { label: 'Actual', data: spent, backgroundColor: C.accent, borderRadius: 3, borderWidth: 0 },
+          ],
+        },
+        options: {
+          ...baseOpts,
+          plugins: {
+            ...baseOpts.plugins,
+            legend: { display: true, labels: { color: C.text2, boxWidth: 10, font: { size: 11 } } },
+            tooltip: { ...baseOpts.plugins.tooltip, callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } },
+          },
+        },
+      });
+    }
+
+    if (document.getElementById('deptDistChart')) {
+      upsertChart('deptDistChart', {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: spent, backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { color: C.text2, font: { size: 11 }, boxWidth: 10, padding: 12 } },
+            tooltip: { backgroundColor: '#1b2130', borderColor: C.border, borderWidth: 1, bodyColor: '#e6e8ee', callbacks: { label: (c) => formatCurrency(c.parsed) } },
+          },
+        },
+      });
     }
   }
 
-  const byCat = await fetchAPI('/summary/spend-by-category');
   if (byCat) {
-    const labels = Array.isArray(byCat)
-      ? byCat.map(d => d.category)
-      : (byCat.labels || []);
-    const data = Array.isArray(byCat)
-      ? byCat.map(d => d.total_spend || d.amount || 0)
-      : (byCat.values || byCat.spend || []);
+    const labels = Array.isArray(byCat) ? byCat.map((d) => d.category) : (byCat.labels || []);
+    const data = Array.isArray(byCat) ? byCat.map((d) => toNumber(d.total_spend || d.amount)) : (byCat.values || byCat.spend || []);
     const colors = [C.purple, C.accent, C.success, C.warning, C.gray, C.teal, C.orange];
 
-    if(document.getElementById('donutChart')) {
+    if (document.getElementById('donutChart')) {
       upsertChart('donutChart', {
         type: 'doughnut',
-        data: { labels, datasets:[{ data, backgroundColor:colors, borderWidth:0, hoverOffset:4 }] },
-        options: { responsive:true,maintainAspectRatio:false,cutout:'72%',
-          plugins:{legend:{display:false},tooltip:{backgroundColor:'#1b2130',borderColor:C.border,borderWidth:1,bodyColor:'#e6e8ee',
-            callbacks:{label:c=>` ${c.label}: ${formatCurrency(c.parsed)}`}}}
-        }
-      });
-    }
-
-    if(document.getElementById('catChart')) {
-      upsertChart('catChart',{type:'bar',data:{
-        labels, datasets:[{data, backgroundColor:C.accent, borderRadius:3, borderWidth:0}]
-      },options:{...baseOpts,indexAxis:'y',plugins:{...baseOpts.plugins,tooltip:{...baseOpts.plugins.tooltip,
-        callbacks:{label:c=>formatCurrency(c.parsed.x)}
-      }}}});
-    }
-  }
-
-  const trend = await fetchAPI('/summary/trend');
-  if (trend && document.getElementById('trendChart')) {
-    const dates = Array.isArray(trend)
-      ? trend.map(d => formatDate(d.date))
-      : (trend.labels || []).map(d => formatDate(d));
-    const vals = Array.isArray(trend)
-      ? trend.map(d => d.daily_spend)
-      : (trend.daily_total || []);
-
-    if (dates.length) {
-      upsertChart('trendChart', {
-        type: 'line',
-        data: {
-          labels: dates,
-          datasets: [{label:'Daily Spend', data:vals, borderColor:C.accent, backgroundColor:'rgba(79,124,255,0.05)', tension:0.4, borderWidth:1.5, pointRadius:0, fill:true}]
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          plugins: {
+            legend: { display: false },
+            tooltip: { backgroundColor: '#1b2130', borderColor: C.border, borderWidth: 1, bodyColor: '#e6e8ee', callbacks: { label: (c) => ` ${c.label}: ${formatCurrency(c.parsed)}` } },
+          },
         },
-        options: { ...baseOpts, plugins:{ ...baseOpts.plugins, tooltip:{...baseOpts.plugins.tooltip,
-          callbacks:{label:c=>` ${c.dataset.label}: ${formatCurrency(c.parsed.y)}`}
-        }}}
+      });
+    }
+
+    if (document.getElementById('catChart')) {
+      upsertChart('catChart', {
+        type: 'bar',
+        data: { labels, datasets: [{ data, backgroundColor: C.accent, borderRadius: 3, borderWidth: 0 }] },
+        options: {
+          ...baseOpts,
+          indexAxis: 'y',
+          plugins: {
+            ...baseOpts.plugins,
+            tooltip: { ...baseOpts.plugins.tooltip, callbacks: { label: (c) => formatCurrency(c.parsed.x) } },
+          },
+        },
       });
     }
   }
 
-  const bud = await fetchAPI('/budgets/utilization');
+  if (trend && document.getElementById('trendChart')) {
+    const dateLabels = Array.isArray(trend) ? trend.map((d) => formatDate(d.date)) : (trend.labels || []).map((d) => formatDate(d));
+    const vals = Array.isArray(trend) ? trend.map((d) => toNumber(d.daily_spend)) : (trend.daily_total || []).map(toNumber);
+    upsertChart('trendChart', {
+      type: 'line',
+      data: { labels: dateLabels, datasets: [{ label: 'Daily Spend', data: vals, borderColor: C.accent, backgroundColor: 'rgba(79,124,255,0.05)', tension: 0.4, borderWidth: 1.5, pointRadius: 0, fill: true }] },
+      options: {
+        ...baseOpts,
+        plugins: { ...baseOpts.plugins, tooltip: { ...baseOpts.plugins.tooltip, callbacks: { label: (c) => ` ${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } } },
+      },
+    });
+  }
+
   if (bud && document.getElementById('budgetChart')) {
     const rows = Array.isArray(bud) ? bud : (bud.departments || []);
-    const labels = rows.map(b => b.department);
-    const budgetData = rows.map(b => b.amount ?? b.budget ?? 0);
-    const actualData = rows.map(b => b.spent ?? 0);
+    const labels = rows.map((b) => b.department);
+    const budgetData = rows.map((b) => toNumber(b.amount ?? b.budget));
+    const actualData = rows.map((b) => toNumber(b.spent));
     upsertChart('budgetChart', {
       type: 'bar',
       data: {
         labels,
-        datasets:[
-          {label:'Budget',data:budgetData,backgroundColor:C.gray,borderRadius:3,borderWidth:0},
-          {label:'Actual',data:actualData,backgroundColor:C.accent,borderRadius:3,borderWidth:0},
-        ]
+        datasets: [
+          { label: 'Budget', data: budgetData, backgroundColor: C.gray, borderRadius: 3, borderWidth: 0 },
+          { label: 'Actual', data: actualData, backgroundColor: C.accent, borderRadius: 3, borderWidth: 0 },
+        ],
       },
-      options:{...baseOpts,plugins:{...baseOpts.plugins,legend:{display:false},tooltip:{...baseOpts.plugins.tooltip,
-        callbacks:{label:c=>`${c.dataset.label}: ${formatCurrency(c.parsed.y)}`}
-      }}}
+      options: {
+        ...baseOpts,
+        plugins: {
+          ...baseOpts.plugins,
+          legend: { display: false },
+          tooltip: { ...baseOpts.plugins.tooltip, callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } },
+        },
+      },
     });
   }
+
+  const vendorMap = {};
+  monthTxns.forEach((t) => {
+    const vendor = t.vendor || 'Unknown';
+    vendorMap[vendor] = toNumber(vendorMap[vendor]) + toNumber(t.amount);
+  });
+  const topVendors = Object.entries(vendorMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const vendorLabels = topVendors.map(([name]) => name);
+  const vendorData = topVendors.map(([, value]) => value);
+
+  if (document.getElementById('vendorChart')) {
+    upsertChart('vendorChart', {
+      type: 'bar',
+      data: { labels: vendorLabels, datasets: [{ data: vendorData, backgroundColor: C.accent, borderRadius: 3, borderWidth: 0 }] },
+      options: {
+        ...baseOpts,
+        indexAxis: 'y',
+        plugins: { ...baseOpts.plugins, tooltip: { ...baseOpts.plugins.tooltip, callbacks: { label: (c) => formatCurrency(c.parsed.x) } } },
+      },
+    });
+  }
+
+  if (document.getElementById('vendorAnalChart')) {
+    upsertChart('vendorAnalChart', {
+      type: 'doughnut',
+      data: { labels: vendorLabels, datasets: [{ data: vendorData, backgroundColor: [C.accent, C.purple, C.success, C.warning, C.info, C.teal, C.gray, C.orange], borderWidth: 0 }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: '#1b2130', borderColor: C.border, borderWidth: 1, bodyColor: '#e6e8ee', callbacks: { label: (c) => ` ${c.label}: ${formatCurrency(c.parsed)}` } },
+        },
+      },
+    });
+  }
+
+  const monthlySpend = {};
+  allTxns.forEach((t) => {
+    const monthKey = String(t.date || '').slice(0, 7);
+    if (!monthKey) return;
+    monthlySpend[monthKey] = toNumber(monthlySpend[monthKey]) + toNumber(t.amount);
+  });
+
+  const selectedDate = new Date(`${month}-01T00:00:00`);
+  const historyMonths = [];
+  for (let i = 5; i >= 0; i -= 1) {
+    const d = new Date(selectedDate);
+    d.setMonth(selectedDate.getMonth() - i);
+    const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    historyMonths.push(m);
+  }
+  const monthlyHistory = historyMonths.map((m) => toNumber(monthlySpend[m]));
+
+  if (document.getElementById('monthlyChart')) {
+    upsertChart('monthlyChart', {
+      type: 'line',
+      data: {
+        labels: historyMonths.map(monthLabelFromIso),
+        datasets: [{ label: 'Monthly Spend', data: monthlyHistory, borderColor: C.accent, tension: 0.35, fill: false, pointRadius: 2 }],
+      },
+      options: {
+        ...baseOpts,
+        plugins: { ...baseOpts.plugins, tooltip: { ...baseOpts.plugins.tooltip, callbacks: { label: (c) => formatCurrency(c.parsed.y) } } },
+      },
+    });
+  }
+
+  const forecastLabels = [];
+  for (let i = 2; i >= 0; i -= 1) {
+    const d = new Date(selectedDate);
+    d.setMonth(selectedDate.getMonth() - i);
+    forecastLabels.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+  for (let i = 1; i <= 3; i += 1) {
+    const d = new Date(selectedDate);
+    d.setMonth(selectedDate.getMonth() + i);
+    forecastLabels.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+
+  const latestActual = toNumber(monthlySpend[month]);
+  const actualSeries = forecastLabels.map((m, idx) => (idx <= 2 ? toNumber(monthlySpend[m]) : null));
+  const forecastSeries = forecastLabels.map((_, idx) => {
+    if (idx < 2) return null;
+    return Math.round((latestActual || 0) * Math.pow(1.06, idx - 2));
+  });
+
+  if (document.getElementById('forecastChart')) {
+    upsertChart('forecastChart', {
+      type: 'line',
+      data: {
+        labels: forecastLabels.map(monthLabelFromIso),
+        datasets: [
+          { label: 'Actual', data: actualSeries, borderColor: C.success, backgroundColor: 'rgba(34,197,94,0.06)', tension: 0.3, pointRadius: 3, fill: false },
+          { label: 'Forecast', data: forecastSeries, borderColor: C.accent, borderDash: [6, 4], tension: 0.35, pointRadius: 3, fill: false },
+        ],
+      },
+      options: {
+        ...baseOpts,
+        plugins: {
+          ...baseOpts.plugins,
+          legend: { display: true, labels: { color: C.text2, boxWidth: 10, font: { size: 11 } } },
+          tooltip: { ...baseOpts.plugins.tooltip, callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } },
+        },
+      },
+    });
+  }
+
+  const forecastBody = document.getElementById('forecast-table-body');
+  if (forecastBody) {
+    forecastBody.innerHTML = forecastLabels
+      .map((m, idx) => {
+        const actual = actualSeries[idx];
+        const forecast = toNumber(forecastSeries[idx]);
+        const variance = actual === null ? null : actual - forecast;
+        const varianceText = variance === null ? '-' : formatCurrency(variance);
+        const varianceClass = variance === null ? 'color-text2' : (variance < 0 ? 'color-danger' : 'color-success');
+        return `<tr>
+          <td class="mono text2">${escapeHTML(monthLabelFromIso(m))}</td>
+          <td class="mono">${actual === null ? '-' : formatCurrency(actual)}</td>
+          <td class="mono">${formatCurrency(forecast)}</td>
+          <td class="mono ${varianceClass}">${varianceText}</td>
+        </tr>`;
+      })
+      .join('');
+  }
+
+  const predictedNextMonth = toNumber(forecastSeries[3]);
+  const growthPct = latestActual ? ((predictedNextMonth - latestActual) / latestActual) * 100 : 0;
+  const daysInMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate();
+  const burnRate = daysInMonth ? latestActual / daysInMonth : 0;
+  const overallPct = toNumber(bud?.summary?.overall_pct);
+  const deptsOver = Array.isArray(bud?.summary?.depts_over) ? bud.summary.depts_over : [];
+
+  const forecastSpendEl = document.getElementById('forecast-predicted-spend');
+  const forecastGrowthEl = document.getElementById('forecast-growth');
+  const forecastConfidenceEl = document.getElementById('forecast-confidence');
+  const forecastBurnEl = document.getElementById('forecast-burn-rate');
+  const forecastDaysEl = document.getElementById('forecast-days-note');
+  const forecastRiskEl = document.getElementById('forecast-budget-risk');
+  const forecastRiskDeltaEl = document.getElementById('forecast-risk-delta');
+  const forecastRiskNoteEl = document.getElementById('forecast-risk-note');
+  const forecastCostGrowthEl = document.getElementById('forecast-cost-growth');
+  const forecastGrowthDeltaEl = document.getElementById('forecast-growth-delta');
+
+  if (forecastSpendEl) forecastSpendEl.textContent = formatCurrency(predictedNextMonth);
+  if (forecastGrowthEl) forecastGrowthEl.textContent = `↑ ${Math.abs(growthPct).toFixed(1)}% projected`;
+  if (forecastConfidenceEl) forecastConfidenceEl.textContent = latestActual > 0 ? 'Model confidence: medium' : 'Limited history for confidence';
+  if (forecastBurnEl) forecastBurnEl.textContent = formatCurrency(burnRate);
+  if (forecastDaysEl) forecastDaysEl.textContent = `${daysInMonth} days in ${getSelectedMonthLabel()}`;
+  if (forecastRiskEl) {
+    const riskLevel = overallPct > 100 ? 'High' : overallPct > 85 ? 'Medium' : 'Low';
+    forecastRiskEl.textContent = riskLevel;
+    forecastRiskEl.style.color = riskLevel === 'High' ? 'var(--danger)' : (riskLevel === 'Medium' ? 'var(--warning)' : 'var(--success)');
+  }
+  if (forecastRiskDeltaEl) forecastRiskDeltaEl.textContent = overallPct > 100 ? 'Over budget trajectory' : 'Monitoring trend';
+  if (forecastRiskNoteEl) forecastRiskNoteEl.textContent = deptsOver.length ? `${deptsOver.length} departments over budget` : 'No departments over budget';
+  if (forecastCostGrowthEl) forecastCostGrowthEl.textContent = `${growthPct.toFixed(1)}%`;
+  if (forecastGrowthDeltaEl) forecastGrowthDeltaEl.textContent = growthPct > 0 ? 'Rising trend' : 'Stable trend';
 }
 
 async function renderTransactions() {
-  const txnsResp = await fetchAPI('/transactions?per_page=25');
-  const txns = Array.isArray(txnsResp) ? txnsResp : (txnsResp?.data || []);
+  const month = getSelectedMonthParam();
+  const txns = await fetchAllTransactions(month);
   const txnBody = document.getElementById('txn-tbody');
-  if (!txnBody || !txns) return;
+  if (!txnBody) return;
   txnBody.innerHTML = '';
+
+  const summaryText = document.getElementById('transactions-summary-text');
+  if (summaryText) {
+    summaryText.textContent = `${txns.length} transactions · ${getSelectedMonthLabel()}`;
+  }
   
-  txns.forEach(t => {
+  const topRows = txns;
+  
+  topRows.forEach((t) => {
     const reviewStatus = t.review_status || t.status || 'pending';
     const vendorName = t.vendor_name || t.vendor || 'Unknown';
     const invoiceNumber = t.invoice_number || t.invoice_no || '-';
     const paymentMethod = t.payment_method || '-';
     const category = t.category || 'Uncategorized';
     const department = t.department || 'N/A';
-    let statusClass = 'badge-warning';
-    if (reviewStatus === 'approved' || reviewStatus === 'paid') statusClass = 'badge-success';
-    else if (reviewStatus === 'flagged' || reviewStatus === 'rejected') statusClass = 'badge-critical';
+    const statusClass = txnStatusBadgeClass(reviewStatus);
     
-    let receiptStatus = t.has_receipt ? 'Yes' : 'No';
-    let receiptClass = t.has_receipt ? 'color-success' : 'color-danger';
+    const receiptStatus = t.has_receipt ? 'Yes' : 'No';
+    const receiptClass = t.has_receipt ? 'color-success' : 'color-danger';
 
     txnBody.innerHTML += `<tr>
       <td class="mono text2">${formatDate(t.date)}</td>
       <td style="font-weight:500">${escapeHTML(vendorName)}</td>
       <td><span class="badge badge-info">${escapeHTML(category)}</span></td>
       <td class="text2">${escapeHTML(department)}</td>
-      <td class="mono">${formatCurrency(t.amount)}</td>
+      <td class="mono">${formatCurrency(toNumber(t.amount))}</td>
       <td class="text2">${escapeHTML(paymentMethod)}</td>
       <td class="mono text3">${escapeHTML(invoiceNumber)}</td>
       <td><span class="badge ${statusClass}">${escapeHTML(reviewStatus)}</span></td>
@@ -3088,24 +3375,321 @@ async function renderTransactions() {
 const GLOBAL_ANOMALIES = [];
 
 async function renderAnomalies() {
-  const anomaliesResp = await fetchAPI('/anomalies');
-  const anomalies = Array.isArray(anomaliesResp) ? anomaliesResp : (anomaliesResp?.data || []);
-  if (!anomalies) return;
+  const anomalies = await fetchAllAnomalies(getSelectedMonthParam());
   
   GLOBAL_ANOMALIES.length = 0;
   GLOBAL_ANOMALIES.push(...anomalies);
-  
-  let criticalCount = anomalies.filter(a => a.severity === 'critical').length;
-  let unresolvedVal = anomalies
-    .filter(a => a.status !== 'resolved')
-    .reduce((acc, a) => acc + readTxnAmount(a.transaction || a.transactions), 0);
+
+  const openAnomalies = anomalies.filter((a) => !['resolved', 'dismissed'].includes(a.status));
+  const criticalCount = openAnomalies.filter((a) => a.severity === 'critical').length;
+  const warningCount = openAnomalies.filter((a) => a.severity === 'warning').length;
+  const infoCount = openAnomalies.filter((a) => a.severity === 'info').length;
+  const unresolvedVal = openAnomalies.reduce((acc, a) => acc + readTxnAmount(a.transaction || a.transactions), 0);
   
   const acount = document.getElementById('kpi-anomalies-count');
   if (acount) {
-    acount.textContent = anomalies.filter(a => a.status !== 'resolved').length;
+    acount.textContent = String(openAnomalies.length);
     document.getElementById('kpi-anomalies-detail').textContent = `${criticalCount} critical`;
     document.getElementById('kpi-anomalies-val').textContent = `${formatCurrency(unresolvedVal)} under review`;
   }
+
+  const criticalBadge = document.getElementById('anomalies-count-critical');
+  const warningBadge = document.getElementById('anomalies-count-warning');
+  const infoBadge = document.getElementById('anomalies-count-info');
+  if (criticalBadge) criticalBadge.textContent = `${criticalCount} Critical`;
+  if (warningBadge) warningBadge.textContent = `${warningCount} Warning`;
+  if (infoBadge) infoBadge.textContent = `${infoCount} Info`;
+
+  const openBadge = document.getElementById('dashboard-anomaly-open-badge');
+  if (openBadge) openBadge.textContent = `${openAnomalies.length} open`;
+
+  const dashList = document.getElementById('dashboard-anomaly-list');
+  if (dashList) {
+    const top = openAnomalies.slice(0, 4);
+    dashList.innerHTML = top.length
+      ? top.map((a) => {
+          const idx = GLOBAL_ANOMALIES.findIndex((x) => x.id === a.id);
+          const txn = a.transaction || a.transactions || {};
+          const amount = toNumber(txn.amount);
+          const sevClass = severityBadgeClass(a.severity);
+          const label = anomalyTypeLabel(a.type);
+          return `<div class="anomaly-row" data-anomaly-idx="${idx}">
+            <div class="anomaly-dot" style="background:${a.severity === 'critical' ? 'var(--danger)' : a.severity === 'warning' ? 'var(--warning)' : 'var(--accent)'}"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:500">${escapeHTML(label)}</div>
+              <div class="text-sm color-text2">${escapeHTML(a.title || a.description || 'Detected anomaly')}</div>
+            </div>
+            <span class="font-mono text-sm">${formatCurrency(amount)}</span>
+            <span class="badge ${sevClass}">${escapeHTML((a.severity || 'info').toUpperCase())}</span>
+          </div>`;
+        }).join('')
+      : `<div class="p-4 text-sm color-text2">No anomalies detected for ${escapeHTML(getSelectedMonthLabel())}.</div>`;
+  }
+
+  const anomaliesList = document.getElementById('anomalies-list');
+  if (anomaliesList) {
+    anomaliesList.innerHTML = openAnomalies.length
+      ? openAnomalies.map((a) => {
+          const idx = GLOBAL_ANOMALIES.findIndex((x) => x.id === a.id);
+          const txn = a.transaction || a.transactions || {};
+          const amount = toNumber(txn.amount);
+          const dateText = txn.date ? formatDate(txn.date) : '-';
+          const deptText = txn.department || 'N/A';
+          const methodText = txn.payment_method || '-';
+          const sevClass = severityBadgeClass(a.severity);
+          const severityText = (a.severity || 'info').toUpperCase();
+          return `<div class="card" data-anomaly-idx="${idx}">
+            <div class="p-4" style="display:flex;align-items:center;gap:var(--s4)">
+              <span class="badge ${sevClass}" style="padding:6px 10px;font-size:12px">${escapeHTML(severityText)}</span>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600;margin-bottom:4px">${escapeHTML(a.title || anomalyTypeLabel(a.type))}</div>
+                <div class="text-sm color-text2">${escapeHTML(a.description || 'No description available.')}</div>
+                <div class="text-sm color-text2 mt-3" style="margin-top:6px">Flagged: ${escapeHTML(dateText)} · Dept: ${escapeHTML(deptText)} · Payment: ${escapeHTML(methodText)}</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0">
+                <div class="font-mono" style="font-size:18px;font-weight:500;${a.severity === 'critical' ? 'color:var(--danger)' : a.severity === 'warning' ? 'color:var(--warning)' : ''}">${formatCurrency(amount)}</div>
+                <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">${escapeHTML(dateText)}</div>
+                <div class="flex gap-2">
+                  <button class="btn btn-sm btn-danger"><span>Flag</span></button>
+                  <button class="btn btn-sm"><span>Review</span></button>
+                </div>
+              </div>
+            </div>
+          </div>`;
+        }).join('')
+      : `<div class="card"><div class="p-4 text-sm color-text2">No anomalies found for ${escapeHTML(getSelectedMonthLabel())}.</div></div>`;
+  }
+}
+
+function getMonthWithOffset(monthIso, offset) {
+  const [year, month] = monthIso.split('-').map(Number);
+  const d = new Date(year, month - 1, 1);
+  d.setMonth(d.getMonth() + offset);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+async function renderSubscriptionsPage() {
+  const month = getSelectedMonthParam();
+  const txns = await fetchAllTransactions(month);
+  const rowsByVendor = {};
+  txns
+    .filter((t) => (t.category || '').toLowerCase() === 'software')
+    .forEach((t) => {
+      const vendor = t.vendor || 'Unknown';
+      if (!rowsByVendor[vendor]) {
+        rowsByVendor[vendor] = { vendor, department: t.department || '-', amount: 0, latestDate: t.date || '', invoices: 0 };
+      }
+      rowsByVendor[vendor].amount += toNumber(t.amount);
+      rowsByVendor[vendor].invoices += 1;
+      if ((t.date || '') > rowsByVendor[vendor].latestDate) rowsByVendor[vendor].latestDate = t.date || '';
+    });
+
+  const rows = Object.values(rowsByVendor).sort((a, b) => b.amount - a.amount);
+  const body = document.getElementById('sub-tbody');
+  if (!body) return;
+  body.innerHTML = rows.length
+    ? rows.map((r) => {
+        const status = r.invoices > 1 ? 'Active' : 'Watch';
+        const statusClass = r.invoices > 1 ? 'badge-success' : 'badge-warning';
+        return `<tr>
+          <td style="font-weight:500">${escapeHTML(r.vendor)}</td>
+          <td class="text2">${escapeHTML(r.department)}</td>
+          <td class="mono">${formatCurrency(r.amount)}</td>
+          <td class="mono">${formatCurrency(r.amount * 12)}</td>
+          <td class="text2">${escapeHTML(r.latestDate ? formatDate(r.latestDate) : '-')}</td>
+          <td class="text2">${escapeHTML(r.latestDate ? formatDate(r.latestDate) : '-')}</td>
+          <td><span class="badge ${statusClass}">${status}</span></td>
+          <td><button class="btn btn-sm"><span>Review</span></button></td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="8" class="text2">No software subscriptions found for ${escapeHTML(getSelectedMonthLabel())}.</td></tr>`;
+}
+
+async function renderBudgetsPage() {
+  const month = getSelectedMonthParam();
+  const bud = await fetchAPI(`/budgets/utilization?month=${encodeURIComponent(month)}`);
+  const rows = Array.isArray(bud) ? bud : (bud?.departments || []);
+  const summary = bud?.summary || {};
+
+  const totalBudget = toNumber(summary.total_budget);
+  const totalSpent = toNumber(summary.total_spent);
+  const remaining = toNumber(summary.total_remaining);
+  const overallPct = toNumber(summary.overall_pct);
+  const over = Array.isArray(summary.depts_over) ? summary.depts_over : [];
+
+  const monthLabelEl = document.getElementById('budgets-kpi-month-label');
+  if (monthLabelEl) monthLabelEl.textContent = getSelectedMonthLabel();
+  const totalBudgetEl = document.getElementById('budgets-kpi-total-budget');
+  if (totalBudgetEl) totalBudgetEl.textContent = formatCurrency(totalBudget);
+  const totalSpentEl = document.getElementById('budgets-kpi-total-spent');
+  if (totalSpentEl) totalSpentEl.textContent = formatCurrency(totalSpent);
+  const spentPctEl = document.getElementById('budgets-kpi-total-spent-pct');
+  if (spentPctEl) spentPctEl.textContent = `${overallPct.toFixed(1)}% utilized`;
+  const remainingEl = document.getElementById('budgets-kpi-remaining');
+  if (remainingEl) remainingEl.textContent = formatCurrency(remaining);
+  const overCountEl = document.getElementById('budgets-kpi-over-count');
+  if (overCountEl) overCountEl.textContent = String(over.length);
+  const overListEl = document.getElementById('budgets-kpi-over-list');
+  if (overListEl) overListEl.textContent = over.length ? over.join(', ') : 'None';
+
+  const body = document.getElementById('budgets-tbody');
+  if (!body) return;
+  body.innerHTML = rows.length
+    ? rows.map((row) => {
+        const utilization = toNumber(row.utilization_pct);
+        const status = row.status || 'on_track';
+        const statusText = status === 'over' ? 'Over budget' : status === 'at_risk' ? 'At risk' : 'On track';
+        const statusClass = status === 'over' ? 'badge-critical' : status === 'at_risk' ? 'badge-warning' : 'badge-success';
+        const progressWidth = Math.max(0, Math.min(100, utilization));
+        const progressColor = status === 'over' ? 'var(--danger)' : status === 'at_risk' ? 'var(--warning)' : 'var(--success)';
+        return `<tr>
+          <td style="font-weight:500">${escapeHTML(row.department)}</td>
+          <td class="mono">${formatCurrency(toNumber(row.budget))}</td>
+          <td class="mono ${status === 'over' ? 'color-danger' : ''}">${formatCurrency(toNumber(row.spent))}</td>
+          <td class="mono ${toNumber(row.remaining) < 0 ? 'color-danger' : 'color-success'}">${formatCurrency(toNumber(row.remaining))}</td>
+          <td class="mono ${status === 'over' ? 'color-danger' : ''}">${utilization.toFixed(1)}%</td>
+          <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:${progressWidth}%;background:${progressColor}"></div></div></td>
+          <td><span class="badge ${statusClass}">${statusText}</span></td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="7" class="text2">No budgets configured for ${escapeHTML(getSelectedMonthLabel())}.</td></tr>`;
+}
+
+async function renderVendorsPage() {
+  const month = getSelectedMonthParam();
+  const prevMonth = getMonthWithOffset(month, -1);
+  const [txns, prevTxns, anomalies] = await Promise.all([
+    fetchAllTransactions(month),
+    fetchAllTransactions(prevMonth),
+    fetchAllAnomalies(month),
+  ]);
+
+  const currentAgg = {};
+  txns.forEach((t) => {
+    const vendor = t.vendor || 'Unknown';
+    if (!currentAgg[vendor]) currentAgg[vendor] = { vendor, category: t.category || 'Other', amount: 0, invoices: 0, dates: [] };
+    currentAgg[vendor].amount += toNumber(t.amount);
+    currentAgg[vendor].invoices += 1;
+    currentAgg[vendor].dates.push(t.date || '');
+  });
+
+  const prevAgg = {};
+  prevTxns.forEach((t) => {
+    const vendor = t.vendor || 'Unknown';
+    prevAgg[vendor] = toNumber(prevAgg[vendor]) + toNumber(t.amount);
+  });
+
+  const flaggedVendorSet = new Set(
+    anomalies
+      .filter((a) => ['open', 'reviewed'].includes(a.status))
+      .map((a) => {
+        const txn = a.transaction || a.transactions || {};
+        return txn.vendor || '';
+      })
+      .filter(Boolean)
+  );
+
+  const rows = Object.values(currentAgg).sort((a, b) => b.amount - a.amount);
+  const totalVendors = rows.length;
+  const flaggedCount = rows.filter((r) => flaggedVendorSet.has(r.vendor)).length;
+  const approvedCount = Math.max(0, totalVendors - flaggedCount);
+  const prevVendorSet = new Set(Object.keys(prevAgg));
+  const newCount = rows.filter((r) => !prevVendorSet.has(r.vendor)).length;
+  const topVendor = rows[0]?.vendor || '-';
+
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
+  setText('vendors-total', String(totalVendors));
+  setText('vendors-approved', String(approvedCount));
+  setText('vendors-flagged', String(flaggedCount));
+  setText('vendors-new', String(newCount));
+  setText('vendors-top', topVendor);
+
+  const body = document.getElementById('vendor-tbody');
+  if (!body) return;
+  body.innerHTML = rows.length
+    ? rows.map((r) => {
+        const thisMonth = toNumber(r.amount);
+        const lastMonth = toNumber(prevAgg[r.vendor]);
+        const ytd = thisMonth + lastMonth;
+        const status = flaggedVendorSet.has(r.vendor) ? 'Flagged' : 'Approved';
+        const statusClass = flaggedVendorSet.has(r.vendor) ? 'badge-critical' : 'badge-success';
+        return `<tr>
+          <td style="font-weight:500">${escapeHTML(r.vendor)}</td>
+          <td><span class="badge badge-info">${escapeHTML(r.category)}</span></td>
+          <td class="mono">${formatCurrency(thisMonth)}</td>
+          <td class="mono">${formatCurrency(lastMonth)}</td>
+          <td class="mono">${formatCurrency(ytd)}</td>
+          <td class="mono">${r.invoices}</td>
+          <td><span class="badge ${statusClass}">${status}</span></td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="7" class="text2">No vendor transactions for ${escapeHTML(getSelectedMonthLabel())}.</td></tr>`;
+}
+
+async function renderDepartmentsPage() {
+  const month = getSelectedMonthParam();
+  const [bud, txns] = await Promise.all([
+    fetchAPI(`/budgets/utilization?month=${encodeURIComponent(month)}`),
+    fetchAllTransactions(month),
+  ]);
+
+  const rows = Array.isArray(bud) ? bud : (bud?.departments || []);
+  const topCategoryByDept = {};
+  txns.forEach((t) => {
+    const dept = t.department || 'Unknown';
+    const cat = t.category || 'Other';
+    if (!topCategoryByDept[dept]) topCategoryByDept[dept] = {};
+    topCategoryByDept[dept][cat] = toNumber(topCategoryByDept[dept][cat]) + toNumber(t.amount);
+  });
+
+  const headCountMap = { Engineering: 24, Sales: 18, Marketing: 12, Operations: 8, 'HR & Admin': 6, Infrastructure: 4, Design: 5, Product: 7 };
+  const utilContainer = document.getElementById('departments-utilization-list');
+  if (utilContainer) {
+    utilContainer.innerHTML = rows.length
+      ? rows.map((row) => {
+          const spent = toNumber(row.spent);
+          const pct = toNumber(row.utilization_pct);
+          const status = row.status || 'on_track';
+          const color = status === 'over' ? 'var(--danger)' : status === 'at_risk' ? 'var(--warning)' : 'var(--success)';
+          return `<div>
+            <div class="flex justify-between mb-2" style="margin-bottom:6px">
+              <span class="text-sm font-mono">${escapeHTML(row.department)}</span>
+              <span class="text-sm ${status === 'over' ? 'color-danger' : 'color-text2'}">${formatCurrency(spent)}</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:${Math.max(0, Math.min(100, pct))}%;background:${color}"></div></div>
+          </div>`;
+        }).join('')
+      : `<div class="text-sm color-text2">No department utilization data for ${escapeHTML(getSelectedMonthLabel())}.</div>`;
+  }
+
+  const deptBody = document.getElementById('departments-tbody');
+  if (!deptBody) return;
+  deptBody.innerHTML = rows.length
+    ? rows.map((row) => {
+        const dept = row.department;
+        const headCount = headCountMap[dept] || 0;
+        const spent = toNumber(row.spent);
+        const budget = toNumber(row.budget);
+        const perHead = headCount ? (spent / headCount) : 0;
+        const catMap = topCategoryByDept[dept] || {};
+        const topCategory = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Other';
+        const status = row.status || 'on_track';
+        const statusClass = status === 'over' ? 'badge-critical' : status === 'at_risk' ? 'badge-warning' : 'badge-success';
+        const statusText = status === 'over' ? 'Over budget' : status === 'at_risk' ? 'At risk' : 'On track';
+        return `<tr>
+          <td style="font-weight:500">${escapeHTML(dept)}</td>
+          <td class="mono">${headCount || '-'}</td>
+          <td class="mono">${formatCurrency(budget)}</td>
+          <td class="mono ${status === 'over' ? 'color-danger' : ''}">${formatCurrency(spent)}</td>
+          <td class="mono">${headCount ? formatCurrency(perHead) : '-'}</td>
+          <td><span class="badge badge-info">${escapeHTML(topCategory)}</span></td>
+          <td><span class="badge ${statusClass}">${statusText}</span></td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="7" class="text2">No departments found for ${escapeHTML(getSelectedMonthLabel())}.</td></tr>`;
 }
 
 async function initDashboard() {
@@ -3113,6 +3697,19 @@ async function initDashboard() {
   await renderCharts();
   await renderTransactions();
   await renderAnomalies();
+  await renderSubscriptionsPage();
+  await renderBudgetsPage();
+  await renderVendorsPage();
+  await renderDepartmentsPage();
+}
+
+async function refreshAllData() {
+  try {
+    await initDashboard();
+  } catch (err) {
+    console.error('refreshAllData failed:', err);
+    throw err;
+  }
 }
 
 // Backward-compat: older deployed pages may still call renderDashboard().
@@ -3121,9 +3718,36 @@ async function renderDashboard() {
 }
 window.renderDashboard = renderDashboard;
 
+function normalizeAiButtons() {
+  document.querySelectorAll('.btn-ai').forEach((btn) => {
+    const fallbackLabel = btn.id === 'chat-send-btn' ? 'Send' : 'Ask AI';
+    const existingSpan = btn.querySelector('span');
+    if (!existingSpan) {
+      const label = btn.textContent.trim() || fallbackLabel;
+      btn.textContent = '';
+      const span = document.createElement('span');
+      span.textContent = label;
+      btn.appendChild(span);
+      return;
+    }
+
+    if (!existingSpan.textContent.trim()) {
+      existingSpan.textContent = fallbackLabel;
+    }
+  });
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   try {
-    await initDashboard();
+    normalizeAiButtons();
+    await hydrateMonthOptions();
+    await refreshAllData();
+    const monthSelector = document.getElementById('global-period-select');
+    if (monthSelector) {
+      monthSelector.addEventListener('change', async () => {
+        await refreshAllData();
+      });
+    }
   } catch (e) {
     console.error('Initial dashboard load failed:', e);
     showToast('Initial data load failed. Check API key and backend CORS settings.', 'warning');
@@ -3215,7 +3839,8 @@ document.querySelectorAll('.btn-ai').forEach(btn => {
 
             // Refresh UI separately so a dashboard refresh failure doesn't mark upload as failed.
             try {
-              await initDashboard();
+              await hydrateMonthOptions();
+              await refreshAllData();
             } catch (refreshErr) {
               console.warn('Dashboard refresh failed after successful upload:', refreshErr);
               showToast('Upload succeeded, but dashboard refresh failed. Please refresh the page.', 'warning');
@@ -3324,18 +3949,13 @@ function closeDrawer() {
 }
 
 
-// Attach click handlers to anomaly rows in dashboard
-document.querySelectorAll('#page-dashboard .anomaly-row').forEach((row, idx) => {
-  row.addEventListener('click', () => openDrawer(idx));
-});
-
-// Attach click handlers to anomaly cards on anomalies page
-document.querySelectorAll('#page-anomalies .card').forEach((card, idx) => {
-  card.style.cursor = 'pointer';
-  card.addEventListener('click', (e) => {
-    if (e.target.tagName === 'BUTTON') return;
-    openDrawer(idx);
-  });
+// Delegate anomaly click handlers to support dynamically-rendered rows/cards
+document.addEventListener('click', (e) => {
+  const target = e.target.closest('[data-anomaly-idx]');
+  if (!target) return;
+  if (e.target.closest('button')) return;
+  const idx = Number(target.getAttribute('data-anomaly-idx'));
+  if (Number.isFinite(idx)) openDrawer(idx);
 });
 
 // ══════════════════════════════════════════
@@ -3343,6 +3963,12 @@ document.querySelectorAll('#page-anomalies .card').forEach((card, idx) => {
 // ══════════════════════════════════════════
 function openModal(id) {
   document.getElementById(id).classList.add('open');
+  if (id === 'modal-add-txn') {
+    const month = getSelectedMonthParam();
+    const defaultDate = `${month}-15`;
+    const dateInput = document.getElementById('add-txn-date');
+    if (dateInput && !dateInput.value) dateInput.value = defaultDate;
+  }
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
@@ -3356,6 +3982,62 @@ document.querySelectorAll('#page-transactions .btn-primary').forEach(btn => {
       openModal('modal-add-txn');
     });
   }
+});
+
+async function submitManualTransaction() {
+  const vendor = (document.getElementById('add-txn-vendor')?.value || '').trim();
+  const amount = toNumber(document.getElementById('add-txn-amount')?.value);
+  const category = (document.getElementById('add-txn-category')?.value || '').trim();
+  const department = (document.getElementById('add-txn-department')?.value || '').trim();
+  const date = (document.getElementById('add-txn-date')?.value || '').trim();
+  const notes = (document.getElementById('add-txn-notes')?.value || '').trim();
+
+  if (!vendor || !date || amount <= 0) {
+    showToast('Enter vendor, date, and a positive amount.', 'warning');
+    return;
+  }
+
+  const payload = {
+    date,
+    vendor,
+    category: category || 'Other',
+    department: department || 'Operations',
+    amount,
+    payment_method: 'Bank Transfer',
+    invoice_no: null,
+    status: 'pending',
+    has_receipt: false,
+    notes: notes || null,
+  };
+
+  const submitBtn = document.getElementById('add-txn-submit');
+  const original = submitBtn?.innerHTML || 'Add Transaction';
+  if (submitBtn) {
+    submitBtn.innerHTML = '<span>Saving...</span>';
+    submitBtn.disabled = true;
+  }
+
+  try {
+    await fetchAPI('/transactions', 'POST', payload);
+    closeModal('modal-add-txn');
+    showToast('Transaction added successfully.', 'success');
+    await hydrateMonthOptions(String(payload.date || '').slice(0, 7));
+    await refreshAllData();
+    switchPage('dashboard');
+  } catch (err) {
+    console.error('Manual transaction save failed:', err);
+    showToast(`Failed to add transaction: ${err.message}`, 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.innerHTML = original;
+      submitBtn.disabled = false;
+    }
+  }
+}
+
+document.getElementById('add-txn-submit')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  submitManualTransaction();
 });
 // ══════════════════════════════════════════
 // ERROR ALERT DIALOG
@@ -3421,25 +4103,213 @@ function showToast(message, type = 'info', duration = 3000) {
   }, duration);
 }
 
-// Wire action buttons to toasts for demo polish
-document.querySelectorAll('[onclick*="closeModal"]').forEach(btn => {
-  if (btn.textContent.trim() === 'Add Transaction') {
-    btn.addEventListener('click', () => showToast('Transaction added successfully', 'success'));
-  }
-});
-document.querySelectorAll('#page-anomalies .btn-sm').forEach(btn => {
-  const txt = btn.textContent.trim();
-  if (txt === 'Approve') btn.addEventListener('click', () => showToast('Transaction approved', 'success'));
-  if (txt === 'Flag' || txt === 'Dispute') btn.addEventListener('click', () => showToast('Transaction flagged for review', 'warning'));
-  if (txt === 'Acknowledge') btn.addEventListener('click', () => showToast('Alert acknowledged', 'info'));
-  if (txt === 'Alert Team') btn.addEventListener('click', () => showToast('Team notified via email', 'info'));
-  if (txt === 'Request Receipt') btn.addEventListener('click', () => showToast('Receipt request sent to Ravi Kumar', 'info'));
-});
-document.querySelectorAll('#page-settings .btn-primary').forEach(btn => {
+async function exportTransactionsCSV() {
+  const month = getSelectedMonthParam();
+  const txns = await fetchAllTransactions(month);
+  const rows = txns.map((t) => ({
+    date: t.date || '',
+    vendor: t.vendor || '',
+    category: t.category || '',
+    department: t.department || '',
+    amount: toNumber(t.amount),
+    payment_method: t.payment_method || '',
+    invoice_no: t.invoice_no || '',
+    status: t.status || '',
+    has_receipt: t.has_receipt ? 'yes' : 'no',
+    notes: t.notes || '',
+  }));
+  const csv = toCSV(rows, ['date', 'vendor', 'category', 'department', 'amount', 'payment_method', 'invoice_no', 'status', 'has_receipt', 'notes']);
+  downloadTextFile(`transactions_${month}.csv`, csv, 'text/csv;charset=utf-8');
+  showToast('Transactions CSV exported.', 'success');
+}
+
+async function exportTrendCSV() {
+  const month = getSelectedMonthParam();
+  const trend = await fetchAPI(`/summary/trend?month=${encodeURIComponent(month)}`);
+  const labels = Array.isArray(trend) ? trend.map((row) => row.date) : (trend?.labels || []);
+  const totals = Array.isArray(trend) ? trend.map((row) => toNumber(row.daily_spend)) : (trend?.daily_total || []);
+  const rows = labels.map((date, idx) => ({
+    date,
+    daily_total: toNumber(totals[idx]),
+  }));
+  const csv = toCSV(rows, ['date', 'daily_total']);
+  downloadTextFile(`spend_trend_${month}.csv`, csv, 'text/csv;charset=utf-8');
+  showToast('Trend CSV exported.', 'success');
+}
+
+async function exportBudgetsCSV() {
+  const month = getSelectedMonthParam();
+  const bud = await fetchAPI(`/budgets/utilization?month=${encodeURIComponent(month)}`);
+  const rows = (bud?.departments || []).map((r) => ({
+    department: r.department,
+    budget: toNumber(r.budget),
+    spent: toNumber(r.spent),
+    remaining: toNumber(r.remaining),
+    utilization_pct: toNumber(r.utilization_pct),
+    status: r.status || '',
+  }));
+  const csv = toCSV(rows, ['department', 'budget', 'spent', 'remaining', 'utilization_pct', 'status']);
+  downloadTextFile(`budgets_${month}.csv`, csv, 'text/csv;charset=utf-8');
+  showToast('Budget CSV exported.', 'success');
+}
+
+async function exportVendorsCSV() {
+  const month = getSelectedMonthParam();
+  const txns = await fetchAllTransactions(month);
+  const agg = {};
+  txns.forEach((t) => {
+    const vendor = t.vendor || 'Unknown';
+    if (!agg[vendor]) agg[vendor] = { vendor, category: t.category || 'Other', spend: 0, invoices: 0 };
+    agg[vendor].spend += toNumber(t.amount);
+    agg[vendor].invoices += 1;
+  });
+  const rows = Object.values(agg).sort((a, b) => b.spend - a.spend);
+  const csv = toCSV(rows, ['vendor', 'category', 'spend', 'invoices']);
+  downloadTextFile(`vendors_${month}.csv`, csv, 'text/csv;charset=utf-8');
+  showToast('Vendors CSV exported.', 'success');
+}
+
+async function exportAnomaliesCSV() {
+  const month = getSelectedMonthParam();
+  const anomalies = await fetchAllAnomalies(month);
+  const rows = anomalies.map((a) => {
+    const txn = a.transaction || a.transactions || {};
+    return {
+      severity: a.severity || '',
+      type: a.type || '',
+      title: a.title || '',
+      status: a.status || '',
+      vendor: txn.vendor || '',
+      amount: toNumber(txn.amount),
+      date: txn.date || '',
+      department: txn.department || '',
+      payment_method: txn.payment_method || '',
+      description: a.description || '',
+    };
+  });
+  const csv = toCSV(rows, ['severity', 'type', 'title', 'status', 'vendor', 'amount', 'date', 'department', 'payment_method', 'description']);
+  downloadTextFile(`anomalies_${month}.csv`, csv, 'text/csv;charset=utf-8');
+  showToast('Anomalies CSV exported.', 'success');
+}
+
+async function exportDepartmentsCSV() {
+  const month = getSelectedMonthParam();
+  const bud = await fetchAPI(`/budgets/utilization?month=${encodeURIComponent(month)}`);
+  const rows = (bud?.departments || []).map((d) => ({
+    department: d.department,
+    budget: toNumber(d.budget),
+    spent: toNumber(d.spent),
+    remaining: toNumber(d.remaining),
+    utilization_pct: toNumber(d.utilization_pct),
+    status: d.status || '',
+  }));
+  const csv = toCSV(rows, ['department', 'budget', 'spent', 'remaining', 'utilization_pct', 'status']);
+  downloadTextFile(`departments_${month}.csv`, csv, 'text/csv;charset=utf-8');
+  showToast('Department CSV exported.', 'success');
+}
+
+async function exportSubscriptionsCSV() {
+  const month = getSelectedMonthParam();
+  const txns = await fetchAllTransactions(month);
+  const rowsByVendor = {};
+  txns
+    .filter((txn) => (txn.category || '').toLowerCase() === 'software')
+    .forEach((txn) => {
+      const vendor = txn.vendor || 'Unknown';
+      if (!rowsByVendor[vendor]) {
+        rowsByVendor[vendor] = {
+          vendor,
+          department: txn.department || '-',
+          monthly_cost: 0,
+          invoices: 0,
+          latest_date: txn.date || '',
+        };
+      }
+      rowsByVendor[vendor].monthly_cost += toNumber(txn.amount);
+      rowsByVendor[vendor].invoices += 1;
+      if ((txn.date || '') > rowsByVendor[vendor].latest_date) {
+        rowsByVendor[vendor].latest_date = txn.date || '';
+      }
+    });
+
+  const rows = Object.values(rowsByVendor)
+    .sort((a, b) => b.monthly_cost - a.monthly_cost)
+    .map((row) => ({
+      vendor: row.vendor,
+      department: row.department,
+      monthly_cost: row.monthly_cost,
+      annual_cost: row.monthly_cost * 12,
+      invoices: row.invoices,
+      latest_date: row.latest_date,
+    }));
+
+  const csv = toCSV(rows, ['vendor', 'department', 'monthly_cost', 'annual_cost', 'invoices', 'latest_date']);
+  downloadTextFile(`subscriptions_${month}.csv`, csv, 'text/csv;charset=utf-8');
+  showToast('Subscriptions CSV exported.', 'success');
+}
+
+async function exportReportsCSV() {
+  const month = getSelectedMonthParam();
+  const [summary, budgets] = await Promise.all([
+    fetchAPI(`/summary?month=${encodeURIComponent(month)}`),
+    fetchAPI(`/budgets/utilization?month=${encodeURIComponent(month)}`),
+  ]);
+  const rows = [{
+    month,
+    total_spend: toNumber(summary?.total_spend),
+    total_budget: toNumber(summary?.total_budget),
+    budget_remaining: toNumber(summary?.budget_remaining),
+    transaction_count: toNumber(summary?.transaction_count),
+    anomaly_count: toNumber(summary?.anomaly_count),
+    departments_over_budget: (budgets?.summary?.depts_over || []).join('|'),
+  }];
+  const csv = toCSV(rows, ['month', 'total_spend', 'total_budget', 'budget_remaining', 'transaction_count', 'anomaly_count', 'departments_over_budget']);
+  downloadTextFile(`report_summary_${month}.csv`, csv, 'text/csv;charset=utf-8');
+  showToast('Report CSV exported.', 'success');
+}
+
+async function exportReportsPDF() {
+  const month = getSelectedMonthParam();
+  const summary = await fetchAPI(`/summary?month=${encodeURIComponent(month)}`);
+  exportCurrentPageAsPrintReport(`CashFlow Report — ${getSelectedMonthLabel()}`, [
+    `Month: ${month}`,
+    `Total spend: ${formatCurrency(toNumber(summary?.total_spend))}`,
+    `Total budget: ${formatCurrency(toNumber(summary?.total_budget))}`,
+    `Remaining budget: ${formatCurrency(toNumber(summary?.budget_remaining))}`,
+    `Transactions: ${toNumber(summary?.transaction_count)}`,
+    `Anomalies: ${toNumber(summary?.anomaly_count)}`,
+    `Top vendor: ${summary?.top_vendor || '-'}`,
+  ]);
+}
+
+document.querySelectorAll('#page-settings .btn-primary').forEach((btn) => {
   if (btn.textContent.trim() === 'Save changes') btn.addEventListener('click', () => showToast('Settings saved successfully', 'success'));
 });
-document.querySelectorAll('#page-transactions .btn').forEach(btn => {
-  if (btn.textContent.trim() === 'Export CSV') btn.addEventListener('click', () => showToast('CSV export started — check your downloads', 'info'));
+
+function bindAsyncClick(elementId, handler) {
+  document.getElementById(elementId)?.addEventListener('click', (e) => {
+    e.preventDefault();
+    handler().catch((err) => showToast(err.message, 'error'));
+  });
+}
+
+// Export bindings
+bindAsyncClick('transactions-export-csv-btn', exportTransactionsCSV);
+bindAsyncClick('dashboard-trend-export-csv-btn', exportTrendCSV);
+bindAsyncClick('subscriptions-export-btn', exportSubscriptionsCSV);
+bindAsyncClick('budgets-export-btn', exportBudgetsCSV);
+bindAsyncClick('vendors-export-btn', exportVendorsCSV);
+bindAsyncClick('reports-export-pdf-btn', exportReportsPDF);
+bindAsyncClick('reports-export-csv-btn', exportReportsCSV);
+document.querySelector('#page-anomalies .section-actions .btn')?.addEventListener('click', () => showToast('Bulk review action queued.', 'info'));
+
+// Keep anomaly page controls responsive for demo
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('#page-anomalies .btn-sm');
+  if (!btn) return;
+  const txt = btn.textContent.trim();
+  if (txt === 'Review') showToast('Marked anomaly for review.', 'info');
+  if (txt === 'Flag') showToast('Anomaly escalated.', 'warning');
 });
 
 // ══════════════════════════════════════════

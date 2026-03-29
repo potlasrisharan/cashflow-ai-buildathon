@@ -15,6 +15,7 @@ from typing import Literal
 from db import supabase
 from uuid import UUID
 from routes._validators import month_bounds
+from services.anomaly_service import recalculate_month_anomalies
 
 router = APIRouter()
 
@@ -80,12 +81,22 @@ def list_transactions(
 
 
 @router.post("", status_code=201)
-def create_transaction(body: TransactionCreate):
+async def create_transaction(body: TransactionCreate):
     payload = body.model_dump(mode="json")
     resp = supabase.table("transactions").insert(payload).execute()
     if not resp.data:
         raise HTTPException(status_code=500, detail="Failed to create transaction")
-    return resp.data[0]
+    created = resp.data[0]
+
+    try:
+        month = str(created.get("date", ""))[:7]
+        if month:
+            await recalculate_month_anomalies(month)
+    except Exception:
+        # Don't fail transaction creation if anomaly detection fails.
+        pass
+
+    return created
 
 
 @router.get("/stats/by-category")
@@ -139,16 +150,37 @@ def get_transaction(txn_id: UUID = Path(...)):
 
 
 @router.patch("/{txn_id}")
-def update_transaction(txn_id: UUID, body: TransactionUpdate):
+async def update_transaction(txn_id: UUID, body: TransactionUpdate):
+    existing_resp = supabase.table("transactions").select("id,date").eq("id", str(txn_id)).single().execute()
+    if not existing_resp.data:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
     resp = supabase.table("transactions").update(updates).eq("id", str(txn_id)).execute()
     if not resp.data:
         raise HTTPException(status_code=404, detail="Transaction not found")
-    return resp.data[0]
+    updated = resp.data[0]
+
+    try:
+        month = str((updated.get("date") or existing_resp.data.get("date") or ""))[:7]
+        if month:
+            await recalculate_month_anomalies(month)
+    except Exception:
+        pass
+
+    return updated
 
 
 @router.delete("/{txn_id}", status_code=204)
-def delete_transaction(txn_id: UUID):
+async def delete_transaction(txn_id: UUID):
+    existing_resp = supabase.table("transactions").select("id,date").eq("id", str(txn_id)).single().execute()
+    existing = existing_resp.data or {}
     supabase.table("transactions").delete().eq("id", str(txn_id)).execute()
+    try:
+        month = str(existing.get("date", ""))[:7]
+        if month:
+            await recalculate_month_anomalies(month)
+    except Exception:
+        pass

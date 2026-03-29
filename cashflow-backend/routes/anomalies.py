@@ -12,10 +12,12 @@ from datetime import datetime
 from uuid import UUID
 
 from db import supabase
-from services.anomaly_service import detect_anomalies
+from services.anomaly_service import recalculate_month_anomalies
 from routes._validators import month_bounds
 
 router = APIRouter()
+PAGE_SIZE = 1000
+ID_BATCH_SIZE = 200
 
 
 class ResolveBody(BaseModel):
@@ -23,43 +25,114 @@ class ResolveBody(BaseModel):
     note: Optional[str] = None
 
 
+def _chunked(items: list[str], size: int) -> list[list[str]]:
+    return [items[idx: idx + size] for idx in range(0, len(items), size)]
+
+
+def _fetch_transaction_ids_for_month(month: str) -> list[str]:
+    start, end = month_bounds(month)
+    rows: list[str] = []
+    offset = 0
+
+    while True:
+        resp = (
+            supabase.table("transactions")
+            .select("id")
+            .gte("date", start)
+            .lt("date", end)
+            .range(offset, offset + PAGE_SIZE - 1)
+            .execute()
+        )
+        chunk = resp.data or []
+        rows.extend(str(row["id"]) for row in chunk if row.get("id"))
+        if len(chunk) < PAGE_SIZE:
+            break
+        offset += PAGE_SIZE
+
+    return rows
+
+
+def _fetch_anomalies_for_transaction_ids(transaction_ids: list[str]) -> list[dict]:
+    ids = [txn_id for txn_id in transaction_ids if txn_id]
+    if not ids:
+        return []
+
+    rows: list[dict] = []
+    for batch in _chunked(ids, ID_BATCH_SIZE):
+        resp = (
+            supabase.table("anomalies")
+            .select("*, transactions(date,vendor,amount,department,category,payment_method,invoice_no)")
+            .in_("transaction_id", batch)
+            .execute()
+        )
+        rows.extend(resp.data or [])
+
+    rows.sort(key=lambda row: row.get("created_at") or "", reverse=True)
+    return rows
+
+
 @router.get("")
 def list_anomalies(
     status:   Optional[Literal["open", "reviewed", "resolved", "dismissed"]] = Query(None, description="open|reviewed|resolved|dismissed"),
     severity: Optional[Literal["critical", "warning", "info"]] = Query(None, description="critical|warning|info"),
+    month:    Optional[str] = Query(None, description="YYYY-MM"),
     page:     int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=200),
 ):
-    q = (
-        supabase.table("anomalies")
-        .select("*, transactions(date,vendor,amount,department,category,payment_method,invoice_no)")
-        .order("created_at", desc=True)
-    )
-    if status:
-        q = q.eq("status", status)
-    if severity:
-        q = q.eq("severity", severity)
+    if month:
+        txn_ids = _fetch_transaction_ids_for_month(month)
+        scoped_rows = _fetch_anomalies_for_transaction_ids(txn_ids)
+        data_source = scoped_rows
+        if status:
+            data_source = [row for row in data_source if row.get("status") == status]
+        if severity:
+            data_source = [row for row in data_source if row.get("severity") == severity]
 
-    offset = (page - 1) * per_page
-    q = q.range(offset, offset + per_page - 1)
+        offset = (page - 1) * per_page
+        data = data_source[offset: offset + per_page]
+        count_source = scoped_rows
+    else:
+        q = (
+            supabase.table("anomalies")
+            .select("*, transactions(date,vendor,amount,department,category,payment_method,invoice_no)")
+            .order("created_at", desc=True)
+        )
+        if status:
+            q = q.eq("status", status)
+        if severity:
+            q = q.eq("severity", severity)
 
-    resp = q.execute()
-    data = resp.data or []
+        offset = (page - 1) * per_page
+        q = q.range(offset, offset + per_page - 1)
 
-    # Summarize counts
-    all_resp = supabase.table("anomalies").select("severity,status").execute()
-    all_anom = all_resp.data or []
+        resp = q.execute()
+        data = resp.data or []
+
+        count_source = []
+        count_offset = 0
+        while True:
+            all_resp = (
+                supabase.table("anomalies")
+                .select("severity,status")
+                .range(count_offset, count_offset + PAGE_SIZE - 1)
+                .execute()
+            )
+            chunk = all_resp.data or []
+            count_source.extend(chunk)
+            if len(chunk) < PAGE_SIZE:
+                break
+            count_offset += PAGE_SIZE
 
     counts = {
-        "total":     len(all_anom),
-        "open":      sum(1 for a in all_anom if a["status"] == "open"),
-        "critical":  sum(1 for a in all_anom if a["severity"] == "critical"),
-        "warning":   sum(1 for a in all_anom if a["severity"] == "warning"),
-        "info":      sum(1 for a in all_anom if a["severity"] == "info"),
-        "resolved":  sum(1 for a in all_anom if a["status"] == "resolved"),
+        "total":     len(count_source),
+        "open":      sum(1 for a in count_source if a["status"] == "open"),
+        "critical":  sum(1 for a in count_source if a["severity"] == "critical"),
+        "warning":   sum(1 for a in count_source if a["severity"] == "warning"),
+        "info":      sum(1 for a in count_source if a["severity"] == "info"),
+        "resolved":  sum(1 for a in count_source if a["status"] == "resolved"),
     }
 
-    # Estimated financial impact
+    # Estimated financial impact for the currently scoped result set
     financial_impact = 0.0
     for a in data:
         txn = a.get("transactions") or {}
@@ -130,50 +203,5 @@ async def run_anomaly_scan(month: str = Query("2025-01")):
     Re-scan all transactions for a month and insert newly detected anomalies.
     Safe to run multiple times — checks for duplicates via transaction_id.
     """
-    start, end = month_bounds(month)
-
-    txn_resp = (
-        supabase.table("transactions")
-        .select("id,vendor,amount,department,category,date,has_receipt,payment_method")
-        .gte("date", start)
-        .lt("date", end)
-        .execute()
-    )
-    txns = txn_resp.data or []
-    if not txns:
-        return {"message": "No transactions found for this month", "anomalies_found": 0}
-
-    ids = [t["id"] for t in txns]
-    records = [
-        {
-            "vendor":   t["vendor"],
-            "amount":   t["amount"],
-            "department": t["department"],
-            "category": t["category"],
-            "has_receipt": t.get("has_receipt", False),
-            "payment_method": t.get("payment_method", ""),
-        }
-        for t in txns
-    ]
-
-    new_anomalies = await detect_anomalies(records, ids)
-
-    # Filter out any already-existing anomaly for a transaction_id
-    if new_anomalies:
-        existing_resp = (
-            supabase.table("anomalies")
-            .select("transaction_id")
-            .in_("transaction_id", ids)
-            .execute()
-        )
-        existing_txn_ids = {a["transaction_id"] for a in (existing_resp.data or [])}
-        new_anomalies = [a for a in new_anomalies if a["transaction_id"] not in existing_txn_ids]
-
-    if new_anomalies:
-        supabase.table("anomalies").insert(new_anomalies).execute()
-
-    return {
-        "message": f"Scan complete",
-        "transactions_scanned": len(txns),
-        "anomalies_found": len(new_anomalies),
-    }
+    result = await recalculate_month_anomalies(month)
+    return {"message": "Scan complete", **result}

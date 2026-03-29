@@ -11,6 +11,7 @@ from routes._validators import month_bounds
 router = APIRouter()
 
 PAGE_SIZE = 1000
+ID_BATCH_SIZE = 200
 
 
 def _fetch_all_transactions_for_month(month: str, columns: str = "*") -> list[dict]:
@@ -61,6 +62,75 @@ def _fetch_all_open_anomalies(columns: str = "*") -> list[dict]:
     return rows
 
 
+def _chunked(items: list[str], size: int) -> list[list[str]]:
+    return [items[idx: idx + size] for idx in range(0, len(items), size)]
+
+
+def _fetch_open_anomalies_for_transaction_ids(
+    transaction_ids: list[str],
+    columns: str = "*",
+) -> list[dict]:
+    ids = [txn_id for txn_id in transaction_ids if txn_id]
+    if not ids:
+        return []
+
+    rows: list[dict] = []
+    for batch in _chunked(ids, ID_BATCH_SIZE):
+        resp = (
+            supabase.table("anomalies")
+            .select(columns)
+            .eq("status", "open")
+            .in_("transaction_id", batch)
+            .execute()
+        )
+        rows.extend(resp.data or [])
+
+    return rows
+
+
+@router.get("/months")
+def available_months():
+    months: set[str] = set()
+
+    txn_offset = 0
+    while True:
+        resp = (
+            supabase.table("transactions")
+            .select("date")
+            .order("date", desc=True)
+            .range(txn_offset, txn_offset + PAGE_SIZE - 1)
+            .execute()
+        )
+        chunk = resp.data or []
+        for row in chunk:
+            date_value = str(row.get("date", ""))
+            if len(date_value) >= 7:
+                months.add(date_value[:7])
+        if len(chunk) < PAGE_SIZE:
+            break
+        txn_offset += PAGE_SIZE
+
+    budget_offset = 0
+    while True:
+        resp = (
+            supabase.table("budgets")
+            .select("month")
+            .order("month", desc=True)
+            .range(budget_offset, budget_offset + PAGE_SIZE - 1)
+            .execute()
+        )
+        chunk = resp.data or []
+        for row in chunk:
+            month_value = str(row.get("month", ""))
+            if month_value:
+                months.add(month_value)
+        if len(chunk) < PAGE_SIZE:
+            break
+        budget_offset += PAGE_SIZE
+
+    return {"months": sorted(months, reverse=True)}
+
+
 @router.get("")
 def get_dashboard_summary(month: str = Query("2025-01", description="Month in YYYY-MM format")):
     """Returns all KPI metrics for the dashboard header cards."""
@@ -70,6 +140,7 @@ def get_dashboard_summary(month: str = Query("2025-01", description="Month in YY
 
     total_spend = sum(t["amount"] for t in txns)
     txn_count   = len(txns)
+    txn_ids = [str(t["id"]) for t in txns if t.get("id")]
 
     # ── Budget total for the month ─────────────────────────────
     budget_resp = (
@@ -82,7 +153,7 @@ def get_dashboard_summary(month: str = Query("2025-01", description="Month in YY
     budget_remaining = total_budget - total_spend
 
     # ── Open anomalies ─────────────────────────────────────────
-    anomalies = _fetch_all_open_anomalies("*")
+    anomalies = _fetch_open_anomalies_for_transaction_ids(txn_ids, "*")
     critical_count = sum(1 for a in anomalies if a["severity"] == "critical")
 
     # ── Vendor with highest spend ──────────────────────────────
