@@ -2805,6 +2805,11 @@ document.querySelectorAll('.nav-item[data-page]').forEach(item => {
   });
 });
 
+function switchPage(page) {
+  const item = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (item) item.click();
+}
+
 // ══════════════════════════════════════════
 // ══════════════════════════════════════════
 // API INTEGRATION & DATA HYDRATION
@@ -3116,11 +3121,9 @@ document.querySelectorAll('.btn-ai').forEach(btn => {
         const result = await fetchAPI(endpoint, 'POST', formData);
 
         if (result && (result.status === 'success' || result.status === 'done' || result.inserted_ids)) {
-          showToast(`File processed successfully! ${result.transactions ? result.transactions.length : ''} transactions added.`, 'success');
+          showToast(`File processed successfully! ${result.inserted_ids ? result.inserted_ids.length : ''} transactions added.`, 'success');
           // Refresh global data
-          renderDashboard();
-          renderTransactions();
-          renderAnomalies();
+          initDashboard();
           
           // Switch to dashboard after a delay
           setTimeout(() => switchPage('dashboard'), 1500);

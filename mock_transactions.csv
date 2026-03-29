@@ -1,0 +1,7 @@
+date,merchant,category,amount,payment_method,department
+2026-03-01,Starbucks,Food,15.50,Credit Card,Sales
+2026-03-02,AWS,Software,150.00,Wire Transfer,Engineering
+2026-03-05,Office Depot,Supplies,45.20,Cash,Operations
+2026-03-10,Delta Airlines,Travel,450.00,Credit Card,Marketing
+2026-03-15,Amazon,Supplies,89.99,Credit Card,Product
+2026-03-20,Uber,Travel,25.00,Credit Card,Sales
