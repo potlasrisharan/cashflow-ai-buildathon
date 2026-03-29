@@ -24,7 +24,7 @@ def get_dashboard_summary(month: str = Query("2025-01", description="Month in YY
 
     txn_resp = (
         supabase.table("transactions")
-        .select("amount,status,department,category,date")
+        .select("*")
         .gte("date", start)
         .lt("date", end)
         .execute()
@@ -47,7 +47,7 @@ def get_dashboard_summary(month: str = Query("2025-01", description="Month in YY
     # ── Open anomalies ─────────────────────────────────────────
     anom_resp = (
         supabase.table("anomalies")
-        .select("severity")
+        .select("*")
         .eq("status", "open")
         .execute()
     )

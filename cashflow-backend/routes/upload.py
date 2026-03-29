@@ -110,25 +110,54 @@ async def upload_csv(file: UploadFile = File(...)):
             "ai_confidence":  float(row.get("ai_confidence", 0.85)),
         })
 
-    insert_resp = supabase.table("transactions").insert(records).execute()
-    inserted_ids = [r["id"] for r in (insert_resp.data or [])]
+    # ── Insert transactions ───────────────────────────────────
+    records = []
+    for _, row in df.iterrows():
+        records.append({
+            "date":           str(row.get("date", ""))[:10],
+            "vendor":         str(row.get("vendor", "Unknown")),
+            "category":       str(row.get("category", "Other")),
+            "department":     str(row.get("department", "Operations")),
+            "amount":         float(row.get("amount", 0)),
+            "payment_method": str(row.get("payment_method", "Bank Transfer")),
+            "invoice_no":     str(row.get("invoice_no", "")) if row.get("invoice_no") else None,
+            "notes":          str(row.get("notes", "")) if row.get("notes") else None,
+            "status":         "pending",
+            "has_receipt":    False,
+            "ai_confidence":  float(row.get("ai_confidence", 0.85)),
+        })
+
+    try:
+        insert_resp = supabase.table("transactions").insert(records).execute()
+        inserted_ids = [r["id"] for r in (insert_resp.data or [])]
+        print(f"[upload] Success: {len(inserted_ids)} transactions inserted")
+    except Exception as e:
+        print(f"[upload] DB Error (transactions): {e}")
+        raise HTTPException(status_code=500, detail=f"DB Error while saving transactions: {str(e)}")
 
     # ── Anomaly Detection ─────────────────────────────────────
     flagged_count = 0
     if inserted_ids:
-        anomalies = await detect_anomalies(records, inserted_ids)
-        flagged_count = len(anomalies)
-        if anomalies:
-            supabase.table("anomalies").insert(anomalies).execute()
+        try:
+            anomalies = await detect_anomalies(records, inserted_ids)
+            flagged_count = len(anomalies)
+            if anomalies:
+                supabase.table("anomalies").insert(anomalies).execute()
+                print(f"[upload] Success: {flagged_count} anomalies logged")
+        except Exception as e:
+            print(f"[upload] Warning: Anomaly detection failed: {e}")
 
     # ── Log the upload ────────────────────────────────────────
-    supabase.table("uploads").insert({
-        "filename":    file.filename,
-        "row_count":   row_count,
-        "categorized": categorized_count,
-        "flagged":     flagged_count,
-        "status":      "done",
-    }).execute()
+    try:
+        supabase.table("uploads").insert({
+            "filename":    file.filename,
+            "row_count":   row_count,
+            "categorized": categorized_count,
+            "flagged":     flagged_count,
+            "status":      "done",
+        }).execute()
+    except Exception as e:
+        print(f"[upload] Warning: Upload log failed: {e}")
 
     return {
         "status":      "done",
