@@ -8,7 +8,7 @@ FastAPI backend for the CashFlow AI expense intelligence dashboard.
 |-------------|-------------------------------|
 | Framework   | FastAPI + Uvicorn             |
 | Database    | Supabase (Postgres)           |
-| AI          | Groq (LLaMA3-8b)             |
+| AI          | Groq (`llama-3.1-8b-instant`) |
 | OCR         | OCR.space                     |
 | Analytics   | NumPy / SciPy / Pandas        |
 
@@ -41,6 +41,7 @@ Also set `API_KEY` and keep `AUTH_REQUIRED=true` for non-local environments.
 |-----|------|
 | `SUPABASE_URL` + `SUPABASE_KEY` | [supabase.com](https://supabase.com) → Settings → API |
 | `GROQ_API_KEY` | [console.groq.com/keys](https://console.groq.com/keys) — free tier available |
+| `GROQ_MODEL` (optional) | Default: `llama-3.1-8b-instant` |
 | `OCR_SPACE_API_KEY` | [ocr.space/ocrapi](https://ocr.space/ocrapi) — register for free key |
 
 ### 4. Run the server
@@ -160,7 +161,7 @@ cashflow-backend/
 │   ├── budgets.py       ← Budget CRUD + utilization
 │   └── chat.py          ← AI Q&A endpoint
 └── services/
-    ├── ai_service.py       ← Groq LLaMA3 categorization + chat
+    ├── ai_service.py       ← Groq AI categorization + chat
     ├── ocr_service.py      ← OCR.space receipt parsing
     └── anomaly_service.py  ← Z-score anomaly detection
 ```

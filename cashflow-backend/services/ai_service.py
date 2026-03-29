@@ -12,6 +12,7 @@ from config import settings
 
 client = AsyncGroq(api_key=settings.GROQ_API_KEY)
 logger = logging.getLogger(__name__)
+GROQ_MODEL = settings.GROQ_MODEL.strip() or "llama-3.1-8b-instant"
 
 CATEGORIES = [
     "Software", "Marketing", "Travel", "Office",
@@ -56,7 +57,7 @@ Format amounts in Indian notation (₹X,XX,XXX).
 
 async def categorize_transactions(rows: list[dict]) -> list[dict[str, Any]]:
     """
-    Batch categorize up to 50 transactions using Groq llama3.
+    Batch categorize up to 50 transactions using a Groq chat model.
     Returns list of {category, department, confidence} dicts.
     Gracefully falls back to defaults on error.
     """
@@ -72,7 +73,7 @@ async def categorize_transactions(rows: list[dict]) -> list[dict[str, Any]]:
 
     try:
         resp = await client.chat.completions.create(
-            model="llama3-8b-8192",
+            model=GROQ_MODEL,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT_CATEGORIZE},
                 {"role": "user",   "content": user_msg},
@@ -118,7 +119,7 @@ async def chat_with_ai(message: str, history: list[dict] | None = None) -> str:
 
     try:
         resp = await client.chat.completions.create(
-            model="llama3-8b-8192",
+            model=GROQ_MODEL,
             messages=messages,
             temperature=0.4,
             max_tokens=512,
