@@ -6,6 +6,7 @@ GET  /api/upload/history   → List all uploads
 from fastapi import APIRouter, File, UploadFile, HTTPException, Query
 import io
 import logging
+import math
 import pandas as pd
 
 from config import settings
@@ -55,8 +56,15 @@ def _is_probably_text(content: bytes) -> bool:
 
 
 def _parse_amount(value: object) -> float:
+    if value is None:
+        raise ValueError("invalid amount")
     raw = str(value).strip().replace(",", "")
-    return float(raw)
+    if raw.lower() in {"", "nan", "none", "null", "inf", "-inf", "infinity", "-infinity"}:
+        raise ValueError("invalid amount")
+    amount = float(raw)
+    if not math.isfinite(amount):
+        raise ValueError("invalid amount")
+    return amount
 
 
 def _parse_date(value: object) -> str:
@@ -88,6 +96,8 @@ def _parse_confidence(value: object) -> float:
     try:
         conf = float(value)
     except Exception:
+        return 0.85
+    if not math.isfinite(conf):
         return 0.85
     if conf < 0:
         return 0.0
