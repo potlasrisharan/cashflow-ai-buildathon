@@ -1,0 +1,3402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CashFlow AI — Financial Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ─── RESET ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+
+/* ─── TOKENS ─── */
+:root {
+  /* Background layering */
+  --bg: #0F1115;
+  --surface: #151922;
+  --surface-2: #1B2130;
+  --surface-3: #202736;
+
+  /* Borders */
+  --border: rgba(255,255,255,0.07);
+  --border-strong: rgba(255,255,255,0.12);
+
+  /* Text hierarchy */
+  --text-primary: #E6E8EE;
+  --text-secondary: #9AA3B2;
+  --text-muted: #5C6474;
+
+  /* Semantic colors */
+  --accent: #4F7CFF;
+  --accent-hover: #3F6AE6;
+  --accent-bg: rgba(79,124,255,0.12);
+  --success: #22C55E;
+  --success-bg: rgba(34,197,94,0.12);
+  --warning: #F59E0B;
+  --warning-bg: rgba(245,158,11,0.12);
+  --danger: #EF4444;
+  --danger-bg: rgba(239,68,68,0.12);
+  --info: #38BDF8;
+  --info-bg: rgba(56,189,248,0.12);
+
+  /* Chart palette */
+  --chart-1: #4F7CFF;
+  --chart-2: #22C55E;
+  --chart-3: #F59E0B;
+  --chart-4: #EF4444;
+  --chart-5: #8B5CF6;
+  --chart-6: #14B8A6;
+  --chart-7: #F97316;
+  --chart-8: #64748B;
+
+  /* Typography */
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Spacing */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+
+  /* Radius */
+  --r-card:8px; --r-input:6px; --r-btn:6px; --r-badge:4px;
+
+  /* ── Aliases for backward compat ── */
+  --surface2: var(--surface-2);
+  --surface3: var(--surface-3);
+  --border2: var(--border-strong);
+  --text: var(--text-primary);
+  --text2: var(--text-secondary);
+  --text3: var(--text-muted);
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* ─── LAYOUT ─── */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width: 224px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.sidebar::-webkit-scrollbar { width: 0; }
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s4) var(--s4);
+  height: 56px;
+  border-bottom: 1px solid var(--border-strong);
+  flex-shrink: 0;
+}
+.logo-icon {
+  width: 24px; height: 24px;
+  background: var(--accent);
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.logo-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+.logo-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 500;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-radius: var(--r-badge);
+  padding: 2px 6px;
+}
+
+.sidebar-section {
+  padding: var(--s4) 0 var(--s2);
+}
+.sidebar-section-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 0 var(--s4) var(--s2);
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 7px var(--s4);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text2);
+  cursor: pointer;
+  transition: color 0.1s, background 0.1s;
+  position: relative;
+  user-select: none;
+  white-space: nowrap;
+}
+.nav-item:hover {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.04);
+  border-radius: 4px;
+  margin: 0 6px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.nav-item.active {
+  color: var(--text-primary);
+  background: rgba(79,124,255,0.08);
+  font-weight: 500;
+  border-radius: 4px;
+  margin: 0 6px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  border-radius: 0 2px 2px 0;
+}
+.nav-icon { width: 16px; text-align: center; font-size: 13px; flex-shrink: 0; opacity: 0.7; }
+.nav-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--mono);
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-radius: var(--r-badge);
+  padding: 1px 5px;
+  min-width: 18px;
+  text-align: center;
+}
+.nav-badge.warn { background: var(--warning-bg); color: var(--warning); }
+
+.sidebar-bottom {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding: var(--s3) var(--s4);
+  flex-shrink: 0;
+}
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  cursor: pointer;
+  padding: var(--s2) 0;
+}
+.user-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; color: var(--text2);
+  flex-shrink: 0;
+}
+.user-name { font-size: 12px; font-weight: 500; }
+.user-role { font-size: 11px; color: var(--text2); }
+
+/* ─── MAIN ─── */
+.main-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ─── HEADER ─── */
+.header {
+  height: 56px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--s5);
+  gap: var(--s4);
+  background: var(--bg);
+}
+.header-title { font-size: 14px; font-weight: 600; flex-shrink: 0; }
+.header-sep { flex: 1; }
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-input);
+  padding: 0 var(--s3);
+  height: 32px;
+  width: 220px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: text;
+}
+.search-bar input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  width: 100%;
+}
+.search-bar input::placeholder { color: var(--text3); }
+
+.period-select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-input);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12px;
+  padding: 0 var(--s3);
+  height: 32px;
+  cursor: pointer;
+  outline: none;
+}
+.header-icon-btn {
+  width: 32px; height: 32px;
+  border-radius: var(--r-btn);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text2);
+  position: relative;
+  transition: border-color 0.1s, color 0.1s;
+  flex-shrink: 0;
+}
+.header-icon-btn:hover { border-color: var(--border2); color: var(--text); }
+.notif-dot {
+  width: 6px; height: 6px;
+  background: var(--danger);
+  border-radius: 50%;
+  position: absolute;
+  top: 5px; right: 5px;
+  border: 1px solid var(--surface);
+}
+
+/* ─── CONTENT ─── */
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+  display: none;
+  scroll-behavior: smooth;
+}
+.page-content.active { display: block; }
+.page-content::-webkit-scrollbar { width: 4px; }
+.page-content::-webkit-scrollbar-track { background: transparent; }
+.page-content::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+/* ─── COMPONENTS ─── */
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  height: 32px;
+  padding: 0 var(--s3);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--r-btn);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--surface3); border-color: var(--border2); color: var(--text); }
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 500;
+}
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+.btn-sm { height: 28px; font-size: 12px; padding: 0 var(--s2); }
+.btn-danger { border-color: var(--danger-bg); color: var(--danger); background: var(--danger-bg); }
+.btn-danger:hover { background: rgba(239,68,68,0.18); }
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 var(--s2);
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: var(--r-badge);
+}
+.badge-critical { background: var(--danger-bg); color: var(--danger); }
+.badge-warning  { background: var(--warning-bg); color: var(--warning); }
+.badge-info     { background: var(--info-bg);  color: var(--info); }
+.badge-success  { background: var(--success-bg); color: var(--success); }
+.badge-neutral  { background: rgba(255,255,255,0.06); color: var(--text2); }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-card);
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.015);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+}
+.card-body { padding: var(--s5); }
+.card-title { font-size: 13px; font-weight: 600; }
+.card-sub   { font-size: 11px; color: var(--text-secondary); margin-top: 2px; letter-spacing: 0.01em; }
+
+/* Section header */
+.section-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--s4);
+}
+.section-title { font-size: 13px; font-weight: 600; }
+.section-actions { display: flex; gap: var(--s2); }
+
+/* Divider */
+.divider { height: 1px; background: var(--border-strong); margin: var(--s6) 0; }
+
+/* Page row gap */
+.row { display: flex; gap: var(--s5); }
+.row + .row { margin-top: var(--s5); }
+.col { flex: 1; min-width: 0; }
+
+/* Grid */
+.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: var(--s5); }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: var(--s5); }
+.grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: var(--s5); }
+
+/* ─── KPI CARD ─── */
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-card);
+  padding: 20px 20px 16px;
+  min-width: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.kpi-card:hover {
+  border-color: rgba(255,255,255,0.18);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+.kpi-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: var(--s2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kpi-value {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  margin-bottom: var(--s2);
+}
+.kpi-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 500;
+}
+.kpi-delta.up   { color: var(--success); }
+.kpi-delta.down { color: var(--danger); }
+.kpi-delta.warn { color: var(--warning); }
+.kpi-note { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/* ─── TABLE ─── */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: var(--s2) var(--s3);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 11px var(--s3);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+  transition: background 0.1s ease;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td {
+  background: rgba(255,255,255,0.035);
+  cursor: pointer;
+}
+.mono { font-family: var(--mono); font-size: 12px; }
+.text2 { color: var(--text2); }
+.text3 { color: var(--text3); }
+
+/* ─── PROGRESS BAR ─── */
+.progress-track {
+  height: 4px;
+  background: var(--surface3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+
+/* ─── INPUT ─── */
+.input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-input);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 0 var(--s3);
+  height: 32px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.1s;
+}
+.input:focus { border-color: var(--accent); }
+.input::placeholder { color: var(--text3); }
+
+/* ─── DRAG DROP ─── */
+.dropzone {
+  border: 1px dashed var(--border2);
+  border-radius: var(--r-card);
+  padding: var(--s7) var(--s5);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone:hover { border-color: var(--accent); background: var(--accent-bg); }
+.dropzone-icon { font-size: 28px; margin-bottom: var(--s3); opacity: 0.4; }
+.dropzone-label { font-size: 14px; font-weight: 500; margin-bottom: var(--s2); }
+.dropzone-sub { font-size: 12px; color: var(--text2); }
+
+/* ─── INSIGHT CARD ─── */
+.insight-card {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-card);
+  padding: var(--s5);
+  display: flex;
+  gap: var(--s3);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.insight-card:hover {
+  border-color: rgba(255,255,255,0.18);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+.insight-icon {
+  width: 32px; height: 32px;
+  border-radius: var(--r-badge);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.insight-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.insight-body  { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.insight-action { margin-top: var(--s2); font-size: 12px; color: var(--info); cursor: pointer; font-weight: 500; }
+
+/* ─── ANOMALY ROW ─── */
+.anomaly-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+  cursor: pointer;
+}
+.anomaly-row:last-child { border-bottom: none; }
+.anomaly-row:hover { background: rgba(255,255,255,0.02); }
+.anomaly-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ─── CHAT PANEL ─── */
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  height: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-card);
+}
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.chat-messages::-webkit-scrollbar { width: 0; }
+.chat-msg {
+  display: flex;
+  gap: var(--s2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.chat-msg.user { flex-direction: row-reverse; }
+.chat-avatar {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.chat-bubble {
+  max-width: 80%;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-card);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.chat-msg:not(.user) .chat-bubble { background: var(--surface2); color: var(--text); }
+.chat-msg.user .chat-bubble { background: var(--accent-bg); color: var(--text); border: 1px solid rgba(79,124,255,0.2); }
+.chat-input-row {
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: var(--s2);
+}
+
+/* ─── CHART CONTAINERS ─── */
+.chart-box {
+  position: relative;
+  background: rgba(0,0,0,0.12);
+  border-radius: 6px;
+  padding: var(--s3);
+  margin-top: var(--s3);
+}
+
+/* spacing utils */
+.mb-4  { margin-bottom: var(--s4); }
+.mb-3  { margin-bottom: var(--s3); }
+.mb-2  { margin-bottom: var(--s2); }
+.mt-4  { margin-top: var(--s4); }
+.mt-3  { margin-top: var(--s3); }
+.p-4   { padding: var(--s4); }
+.w-full { width: 100%; }
+.flex  { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: var(--s2); }
+.gap-3 { gap: var(--s3); }
+.gap-4 { gap: var(--s4); }
+.font-mono { font-family: var(--mono); }
+.text-sm { font-size: 12px; }
+.text-xs { font-size: 11px; }
+.color-success { color: var(--success); }
+.color-danger  { color: var(--danger); }
+.color-warning { color: var(--warning); }
+.color-accent  { color: var(--accent); }
+.color-text2   { color: var(--text2); }
+
+/* ─── KPI hover — handled above in component block ─── */
+
+/* ─── IMPROVEMENT 2: Neon glow for AI buttons ONLY ─── */
+.btn-ai {
+  background: linear-gradient(135deg, #4F7CFF 0%, #8B5CF6 100%);
+  border: 1px solid rgba(79,124,255,0.4);
+  color: #fff;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 12px rgba(79,124,255,0.25), 0 0 4px rgba(79,124,255,0.15);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+.btn-ai:hover {
+  box-shadow: 0 0 20px rgba(79,124,255,0.4), 0 0 8px rgba(139,92,246,0.3);
+  transform: translateY(-1px);
+  color: #fff;
+  background: linear-gradient(135deg, #3F6AE6 0%, #7C3AED 100%);
+  border-color: rgba(79,124,255,0.6);
+}
+.btn-ai::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+.btn-ai:hover::after {
+  transform: translateX(100%);
+}
+
+/* ─── IMPROVEMENT 3: Floating Action Menu ─── */
+.fab-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: var(--s2);
+}
+.fab-trigger {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(79,124,255,0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.fab-trigger:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 24px rgba(79,124,255,0.4);
+}
+.fab-trigger.open {
+  transform: rotate(45deg);
+  background: var(--surface3);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.fab-menu {
+  display: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s2);
+  animation: fabSlideUp 0.2s ease;
+}
+.fab-menu.open { display: flex; }
+.fab-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 24px;
+  padding: var(--s2) var(--s4);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, border-color 0.1s;
+  font-family: var(--sans);
+}
+.fab-item:hover { background: var(--surface2); border-color: var(--accent); }
+.fab-item .fab-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+@keyframes fabSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── IMPROVEMENT 4: Anomaly Detail Drawer ─── */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 900;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.drawer-overlay.open { opacity: 1; visibility: visible; }
+.drawer {
+  position: fixed;
+  top: 0; right: 0;
+  width: 420px;
+  height: 100vh;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 910;
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.drawer.open { transform: translateX(0); }
+.drawer-header {
+  padding: var(--s5);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.drawer-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.drawer-close {
+  width: 28px; height: 28px;
+  border-radius: var(--r-btn);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.1s;
+}
+.drawer-close:hover { background: var(--surface3); color: var(--text); }
+.drawer-body {
+  padding: var(--s5);
+  flex: 1;
+}
+.drawer-section {
+  margin-bottom: var(--s5);
+}
+.drawer-section-title {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text3);
+  margin-bottom: var(--s3);
+}
+.drawer-detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--s2) 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.drawer-detail-row:last-child { border-bottom: none; }
+.drawer-detail-label { color: var(--text2); }
+.drawer-detail-value { font-weight: 500; }
+.drawer-reasoning {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  padding: var(--s4);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.drawer-reasoning strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+.drawer-actions {
+  padding: var(--s5);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: var(--s2);
+  flex-shrink: 0;
+}
+
+/* ─── IMPROVEMENT 5: Table refinements ─── */
+thead th {
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+tbody td {
+  font-size: 12px;
+}
+tbody tr {
+  transition: background 0.1s ease;
+}
+
+/* ─── IMPROVEMENT 6: Modal overlay ─── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 950;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-card);
+  width: 480px;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: modalSlideUp 0.2s ease;
+}
+.modal-header {
+  padding: var(--s5) var(--s5) var(--s4);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h3 { font-size: 14px; font-weight: 600; }
+.modal-body { padding: var(--s5); }
+.modal-footer {
+  padding: var(--s4) var(--s5);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s2);
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── IMPROVEMENT 7: Smooth page transitions ─── */
+.page-content.active {
+  animation: pageIn 0.2s ease;
+}
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── IMPROVEMENT 8: Comparison table ─── */
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.comparison-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: var(--s2) var(--s3);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.comparison-table td {
+  padding: var(--s3) var(--s3);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.comparison-table .metric-label { color: var(--text2); font-weight: 500; }
+.comparison-table .current { color: var(--text); font-family: var(--mono); }
+.comparison-table .previous { color: var(--text3); font-family: var(--mono); }
+.comparison-table .change {
+  font-family: var(--mono);
+  font-weight: 500;
+}
+.comparison-table .change.positive { color: var(--success); }
+.comparison-table .change.negative { color: var(--danger); }
+
+/* ─── Card hover for consistency ─── */
+.card {
+  transition: border-color 0.15s ease;
+}
+.card:hover {
+  border-color: var(--border2);
+}
+
+/* ─── Improved insight card hover ─── */
+.insight-card {
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.insight-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-1px);
+}
+
+/* ─── Anomaly row clickable feedback ─── */
+.anomaly-row:active {
+  background: rgba(79,124,255,0.05);
+}
+
+/* ─── TOOLTIP ─── */
+[data-tooltip] {
+  position: relative;
+  cursor: pointer;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-family: var(--sans);
+  font-weight: 400;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+/* ─── LOADING SKELETON ─── */
+.skeleton {
+  background: var(--surface-2);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+  animation: skeletonShimmer 1.6s infinite;
+}
+@keyframes skeletonShimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+.skeleton-text  { height: 12px; width: 60%; }
+.skeleton-text-full { height: 12px; width: 100%; }
+.skeleton-value { height: 24px; width: 80px; margin-top: 6px; }
+.skeleton-badge { height: 20px; width: 50px; border-radius: 4px; }
+
+/* ─── NOTIFICATIONS PANEL ─── */
+.notif-panel {
+  position: fixed;
+  top: 56px;
+  right: 0;
+  width: 360px;
+  height: calc(100vh - 56px);
+  background: var(--surface);
+  border-left: 1px solid var(--border-strong);
+  z-index: 800;
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.notif-panel.open { transform: translateX(0); }
+.notif-panel-header {
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.notif-panel-header h3 { font-size: 13px; font-weight: 600; }
+.notif-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s3) 0;
+}
+.notif-panel-body::-webkit-scrollbar { width: 0; }
+.notif-item {
+  display: flex;
+  gap: var(--s3);
+  padding: var(--s3) var(--s5);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: rgba(255,255,255,0.025); }
+.notif-item.unread { background: rgba(79,124,255,0.04); }
+.notif-dot-indicator {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.notif-item-body { flex: 1; min-width: 0; }
+.notif-item-title { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
+.notif-item-sub   { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
+.notif-item-time  { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-family: var(--mono); }
+.notif-panel-footer {
+  padding: var(--s3) var(--s5);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ─── TOAST NOTIFICATION ─── */
+.toast-container {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  align-items: center;
+  pointer-events: none;
+}
+.toast {
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: toastIn 0.25s ease;
+  pointer-events: all;
+  min-width: 240px;
+  max-width: 360px;
+}
+.toast.success { border-left: 3px solid var(--success); }
+.toast.error   { border-left: 3px solid var(--danger); }
+.toast.warning { border-left: 3px solid var(--warning); }
+.toast.info    { border-left: 3px solid var(--info); }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── CONFIRM MODAL ─── */
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+}
+.confirm-modal-overlay.open { display: flex; }
+.confirm-modal {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  width: 400px;
+  max-width: 90vw;
+  animation: modalSlideUp 0.2s ease;
+  overflow: hidden;
+}
+.confirm-modal-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  margin-bottom: var(--s3);
+}
+.confirm-modal-body {
+  padding: var(--s5);
+  text-align: center;
+}
+.confirm-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: var(--s2);
+}
+.confirm-modal-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--s4);
+}
+.confirm-modal-actions {
+  display: flex;
+  gap: var(--s2);
+  justify-content: center;
+}
+
+/* ─── ACTIVITY LOG ─── */
+.activity-item {
+  display: flex;
+  gap: var(--s3);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.activity-item:last-child { border-bottom: none; }
+.activity-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.activity-line {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.activity-line::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  width: 1px;
+  height: calc(100% + 8px);
+  background: var(--border);
+}
+.activity-item:last-child .activity-line::after {
+  display: none;
+}
+.activity-body { flex: 1; min-width: 0; }
+.activity-title { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
+.activity-sub   { font-size: 11px; color: var(--text-secondary); }
+.activity-time  { font-size: 10px; color: var(--text-muted); font-family: var(--mono); margin-top: 3px; }
+
+/* ─── Report card hover ─── */
+.card[style*="cursor:pointer"] {
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.card[style*="cursor:pointer"]:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+/* ═══════════════════════════════════════════
+   ERROR ALERT DIALOG (21st.dev/extendui)
+═══════════════════════════════════════════ */
+.error-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 990;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.error-dialog-overlay.open { display: flex; }
+.error-dialog {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  width: 440px;
+  max-width: 90vw;
+  overflow: hidden;
+  animation: errorDialogIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes errorDialogIn {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.error-dialog-header {
+  padding: var(--s5) var(--s5) var(--s3);
+}
+.error-dialog-header .error-icon-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-bottom: var(--s2);
+}
+.error-dialog-header .error-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--danger-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.error-dialog-header .error-icon::after {
+  content: '✕';
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 700;
+}
+.error-dialog-header h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.error-dialog-desc {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+  padding: 0 var(--s5);
+}
+.error-dialog-code {
+  margin: var(--s4) var(--s5);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  padding: var(--s3) var(--s4);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.error-dialog-code .error-code-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex-shrink: 0;
+  animation: errorPulse 2s ease infinite;
+}
+@keyframes errorPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.error-dialog-footer {
+  padding: var(--s4) var(--s5);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s2);
+}
+.btn-error {
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  color: #fff;
+  font-weight: 500;
+}
+.btn-error:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+
+/* ═══════════════════════════════════════════
+   LIQUID GLASS EFFECT (21st.dev/suraj-xd)
+═══════════════════════════════════════════ */
+.liquid-glass {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  backdrop-filter: blur(3px);
+  filter: url(#glass-distortion);
+  pointer-events: none;
+}
+.liquid-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow:
+    inset 1px 1px 1px 0 rgba(255, 255, 255, 0.12),
+    inset -1px -1px 1px 0 rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+.liquid-glass > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* Glass-enhanced logo icon */
+.logo-icon.liquid-glass {
+  box-shadow: 0 2px 8px rgba(79,124,255,0.25);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.logo-icon.liquid-glass:hover {
+  box-shadow: 0 4px 16px rgba(79,124,255,0.4);
+  transform: scale(1.08);
+}
+
+/* Glass-enhanced AI chat avatar */
+.chat-avatar.liquid-glass {
+  box-shadow: 0 1px 6px rgba(79,124,255,0.2);
+}
+
+/* Glass-enhanced insight icon */
+.insight-icon.liquid-glass {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: box-shadow 0.2s ease;
+}
+.insight-icon.liquid-glass:hover {
+  box-shadow: 0 3px 12px rgba(79,124,255,0.2);
+}
+
+/* Glass-enhanced KPI card on hover */
+.kpi-card.glass-hover:hover {
+  position: relative;
+}
+.kpi-card.glass-hover:hover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-card);
+  background: rgba(255,255,255,0.015);
+  box-shadow:
+    inset 1px 1px 0 rgba(255,255,255,0.06),
+    inset -1px -1px 0 rgba(255,255,255,0.03);
+  pointer-events: none;
+  animation: glassShimmer 0.4s ease;
+}
+@keyframes glassShimmer {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Glass-enhanced btn-ai (additive) */
+.btn-ai.liquid-glass::before {
+  backdrop-filter: blur(2px);
+}
+.btn-ai.liquid-glass::after {
+  background: rgba(255, 255, 255, 0.06);
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon liquid-glass">CF</div>
+    <span class="logo-name">CashFlow AI</span>
+    <span class="logo-badge">Beta</span>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Overview</div>
+    <div class="nav-item active" data-page="dashboard">
+      <span class="nav-icon">⊞</span> Dashboard
+    </div>
+    <div class="nav-item" data-page="transactions">
+      <span class="nav-icon">↕</span> Transactions
+    </div>
+    <div class="nav-item" data-page="upload">
+      <span class="nav-icon">↑</span> Upload Expenses
+    </div>
+    <div class="nav-item" data-page="analytics">
+      <span class="nav-icon">∿</span> Analytics
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Intelligence</div>
+    <div class="nav-item" data-page="anomalies">
+      <span class="nav-icon">⚠</span> Anomalies
+      <span class="nav-badge">4</span>
+    </div>
+    <div class="nav-item" data-page="subscriptions">
+      <span class="nav-icon">↺</span> Subscriptions
+      <span class="nav-badge warn">3</span>
+    </div>
+    <div class="nav-item" data-page="forecasting">
+      <span class="nav-icon">→</span> Forecasting
+    </div>
+    <div class="nav-item" data-page="aiinsights">
+      <span class="nav-icon">◈</span> AI Insights
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Management</div>
+    <div class="nav-item" data-page="budgets">
+      <span class="nav-icon">▤</span> Budgets
+    </div>
+    <div class="nav-item" data-page="vendors">
+      <span class="nav-icon">◎</span> Vendors
+    </div>
+    <div class="nav-item" data-page="departments">
+      <span class="nav-icon">⊟</span> Departments
+    </div>
+    <div class="nav-item" data-page="reports">
+      <span class="nav-icon">≡</span> Reports
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">System</div>
+    <div class="nav-item" data-page="settings">
+      <span class="nav-icon">⊙</span> Settings
+    </div>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-row">
+      <div class="user-avatar">SR</div>
+      <div>
+        <div class="user-name">Saurabh Rao</div>
+        <div class="user-role">Finance Lead</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════════════
+     MAIN AREA
+══════════════════════════════════════════ -->
+<div class="main-wrap">
+
+  <!-- HEADER -->
+  <header class="header">
+    <span class="header-title" id="header-title">Dashboard</span>
+    <div class="header-sep"></div>
+    <div class="search-bar">
+      <span style="color:var(--text3);font-size:12px">⌕</span>
+      <input type="text" placeholder="Search transactions, vendors..."/>
+    </div>
+    <select class="period-select">
+      <option>January 2025</option>
+      <option>December 2024</option>
+      <option>Q4 2024</option>
+      <option>FY 2024</option>
+    </select>
+    <div class="header-icon-btn" title="Notifications">
+      🔔
+      <div class="notif-dot"></div>
+    </div>
+    <div class="user-avatar" style="flex-shrink:0">SR</div>
+  </header>
+
+  <!-- ══════════════════════════════════════
+       PAGE: DASHBOARD
+  ══════════════════════════════════════ -->
+  <div class="page-content active" id="page-dashboard">
+
+    <!-- KPI Row -->
+    <div class="grid-4 mb-4">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Spend</div>
+        <div class="kpi-value" id="kpi-total">₹0</div>
+        <div class="kpi-delta down" id="kpi-total-delta">↑ 0% vs last month</div>
+        <div class="kpi-note">Budget: ₹0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Budget Remaining</div>
+        <div class="kpi-value" id="kpi-budget-rem">₹0</div>
+        <div class="kpi-delta warn" id="kpi-budget-pct">0% left</div>
+        <div class="kpi-note">7 days remaining</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Transactions</div>
+        <div class="kpi-value" id="kpi-txns-count">0</div>
+        <div class="kpi-delta up">↓ 8 from last month</div>
+        <div class="kpi-note" id="kpi-txns-avg">Avg ₹0 per txn</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Anomalies Detected</div>
+        <div class="kpi-value" id="kpi-anomalies-count" style="color:var(--danger)">0</div>
+        <div class="kpi-delta down" id="kpi-anomalies-detail">0 critical</div>
+        <div class="kpi-note" id="kpi-anomalies-val">₹0 under review</div>
+      </div>
+    </div>
+
+    <div class="grid-4 mb-4">
+      <div class="kpi-card">
+        <div class="kpi-label">Subscription Cost</div>
+        <div class="kpi-value">₹1,84,000</div>
+        <div class="kpi-delta warn">3 unused tools</div>
+        <div class="kpi-note">28 active subscriptions</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Forecast Next Month</div>
+        <div class="kpi-value" id="kpi-forecast">₹0</div>
+        <div class="kpi-delta down">↑ 8.1% projected</div>
+        <div class="kpi-note">High confidence (87%)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Top Vendor Spend</div>
+        <div class="kpi-value" id="kpi-top-vendor-val">₹0</div>
+        <div class="kpi-delta warn" id="kpi-top-vendor-name">-</div>
+        <div class="kpi-note" id="kpi-top-vendor-pct">0% of total spend</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Depts Over Budget</div>
+        <div class="kpi-value" id="kpi-depts-over" style="color:var(--danger)">0</div>
+        <div class="kpi-delta down" id="kpi-depts-detail">-</div>
+        <div class="kpi-note">-</div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+      <div class="col" style="flex:2">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Spend Trend by Category</div>
+              <div class="card-sub">Daily spend — January 2025</div>
+            </div>
+            <div class="flex gap-2">
+              <button class="btn btn-sm">CSV</button>
+            </div>
+          </div>
+          <div class="p-4" style="padding-top:0">
+            <div class="chart-box" style="height:220px">
+              <canvas id="trendChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card" style="height:100%">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Spend by Category</div>
+              <div class="card-sub">This month</div>
+            </div>
+          </div>
+          <div class="p-4" style="padding-top:0">
+            <div class="chart-box" style="height:160px">
+              <canvas id="donutChart"></canvas>
+            </div>
+            <div style="margin-top:var(--s3);display:flex;flex-direction:column;gap:6px">
+              <div class="flex justify-between items-center">
+                <span class="text-sm color-text2" style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:#8B5CF6;display:inline-block"></span>Salaries</span>
+                <span class="font-mono text-sm">38%</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm color-text2" style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:#4f7cff;display:inline-block"></span>Marketing</span>
+                <span class="font-mono text-sm">22%</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm color-text2" style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:#22c55e;display:inline-block"></span>Software</span>
+                <span class="font-mono text-sm">18%</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm color-text2" style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:#f59e0b;display:inline-block"></span>Travel</span>
+                <span class="font-mono text-sm">12%</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm color-text2" style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:#475569;display:inline-block"></span>Other</span>
+                <span class="font-mono text-sm">10%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="row mb-4">
+      <div class="col">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Spend by Department</div>
+          </div>
+          <div class="p-4" style="padding-top:0">
+            <div class="chart-box" style="height:180px">
+              <canvas id="deptChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Budget vs Actual</div>
+          </div>
+          <div class="p-4" style="padding-top:0">
+            <div class="chart-box" style="height:180px">
+              <canvas id="budgetChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom panels -->
+    <div class="row">
+      <!-- Anomalies -->
+      <div class="col">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Anomaly Alerts</div>
+            <span class="badge badge-critical">4 open</span>
+          </div>
+          <div class="anomaly-row">
+            <div class="anomaly-dot" style="background:var(--danger)"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:500">Unknown Vendor TX</div>
+              <div class="text-sm color-text2">6× avg spend · no PO match</div>
+            </div>
+            <span class="font-mono text-sm">₹50,000</span>
+            <span class="badge badge-critical">Critical</span>
+          </div>
+          <div class="anomaly-row">
+            <div class="anomaly-dot" style="background:var(--danger)"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:500">Invoice #INV-2291</div>
+              <div class="text-sm color-text2">Duplicate payment detected</div>
+            </div>
+            <span class="font-mono text-sm">₹18,400</span>
+            <span class="badge badge-critical">Critical</span>
+          </div>
+          <div class="anomaly-row">
+            <div class="anomaly-dot" style="background:var(--warning)"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:500">AWS Cloud spike</div>
+              <div class="text-sm color-text2">+180% vs 3-month avg</div>
+            </div>
+            <span class="font-mono text-sm">₹22,000</span>
+            <span class="badge badge-warning">Warning</span>
+          </div>
+          <div class="anomaly-row">
+            <div class="anomaly-dot" style="background:var(--accent)"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:500">Missing receipt — Ravi K.</div>
+              <div class="text-sm color-text2">T&E claim >₹5k without receipt</div>
+            </div>
+            <span class="font-mono text-sm">₹3,800</span>
+            <span class="badge badge-info">Info</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Subscriptions -->
+      <div class="col">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Active Subscriptions</div>
+            <span class="badge badge-warning">₹18.4k/mo waste</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tool</th>
+                  <th>Monthly</th>
+                  <th>Last Used</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>AWS Cloud</td><td class="mono">₹22,000</td><td class="text2">Today</td><td><span class="badge badge-success">Active</span></td></tr>
+                <tr><td>Figma</td><td class="mono">₹8,200</td><td class="text2">47d ago</td><td><span class="badge badge-critical">Unused</span></td></tr>
+                <tr><td>Slack Pro</td><td class="mono">₹4,100</td><td class="text2">Today</td><td><span class="badge badge-success">Active</span></td></tr>
+                <tr><td>Notion</td><td class="mono">₹2,400</td><td class="text2">2d ago</td><td><span class="badge badge-warning">Expiring</span></td></tr>
+                <tr><td>Webflow</td><td class="mono">₹6,300</td><td class="text2">22d ago</td><td><span class="badge badge-critical">Unused</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Insight summary -->
+      <div class="col">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">AI Insights</div>
+            <span class="badge badge-info">3 new</span>
+          </div>
+          <div class="p-4" style="padding-top:0;display:flex;flex-direction:column;gap:var(--s3)">
+            <div class="insight-card" style="border:none;background:var(--surface2);padding:var(--s3)">
+              <div class="insight-icon" style="background:var(--danger-bg)">💸</div>
+              <div>
+                <div class="insight-title">Cancel 3 unused SaaS tools</div>
+                <div class="insight-body">Figma, Webflow, Loom unused 22–47 days. Save ₹18,400/mo.</div>
+                <div class="insight-action">Review →</div>
+              </div>
+            </div>
+            <div class="insight-card" style="border:none;background:var(--surface2);padding:var(--s3)">
+              <div class="insight-icon" style="background:var(--warning-bg)">📊</div>
+              <div>
+                <div class="insight-title">Sales dept 20% over budget</div>
+                <div class="insight-body">₹40,000 overspent. Primarily travel & client meals.</div>
+                <div class="insight-action">Investigate →</div>
+              </div>
+            </div>
+            <div class="insight-card" style="border:none;background:var(--surface2);padding:var(--s3)">
+              <div class="insight-icon" style="background:var(--success-bg)">✓</div>
+              <div>
+                <div class="insight-title">Engineering 16% under budget</div>
+                <div class="insight-body">₹40,000 can be reallocated to Q2 infra upgrade.</div>
+                <div class="insight-action">Reallocate →</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE: TRANSACTIONS
+  ══════════════════════════════════════ -->
+  <div class="page-content" id="page-transactions">
+    <div class="section-hd mb-4">
+      <div>
+        <div class="section-title" style="font-size:14px">All Transactions</div>
+        <div class="text-sm color-text2 mt-3" style="margin-top:4px">342 transactions · January 2025</div>
+      </div>
+      <div class="section-actions">
+        <input class="input" style="width:200px" placeholder="Search vendor, category..."/>
+        <select class="period-select">
+          <option>All Categories</option>
+          <option>Software</option><option>Marketing</option>
+          <option>Travel</option><option>Office</option><option>Vendors</option>
+        </select>
+        <select class="period-select">
+          <option>All Depts</option>
+          <option>Engineering</option><option>Marketing</option>
+          <option>Sales</option><option>HR</option>
+        </select>
+        <button class="btn">Export CSV</button>
+        <button class="btn btn-primary">+ Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Vendor</th><th>Category</th><th>Department</th>
+              <th>Amount</th><th>Method</th><th>Invoice ID</th><th>Status</th>
+              <th>Receipt</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="txn-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE: UPLOAD EXPENSES
+  ══════════════════════════════════════ -->
+  <div class="page-content" id="page-upload">
+    <div class="section-hd mb-4">
+      <div class="section-title" style="font-size:14px">Upload Expenses</div>
+    </div>
+    <div class="row">
+      <div class="col" style="flex:1.5">
+        <div class="dropzone mb-4" id="dropzone" onclick="simulateUpload()">
+          <div class="dropzone-icon">↑</div>
+          <div class="dropzone-label">Drop files here or click to upload</div>
+          <div class="dropzone-sub">Supports CSV, Excel, PDF, JPG, PNG · Max 25MB per file</div>
+        </div>
+        <div class="card mb-4">
+          <div class="card-header"><div class="card-title">Upload Queue</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>File</th><th>Size</th><th>Status</th><th>Progress</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>jan_expenses.csv</td><td class="mono">142 KB</td>
+                  <td><span class="badge badge-success">Done</span></td>
+                  <td><div class="progress-track" style="width:120px"><div class="progress-fill" style="width:100%;background:var(--success)"></div></div></td>
+                </tr>
+                <tr>
+                  <td>invoices_batch.pdf</td><td class="mono">2.4 MB</td>
+                  <td><span class="badge badge-info">Processing</span></td>
+                  <td><div class="progress-track" style="width:120px"><div class="progress-fill" style="width:62%;background:var(--accent)"></div></div></td>
+                </tr>
+                <tr>
+                  <td>receipt_ravi.jpg</td><td class="mono">880 KB</td>
+                  <td><span class="badge badge-neutral">Queued</span></td>
+                  <td><div class="progress-track" style="width:120px"><div class="progress-fill" style="width:0%;background:var(--accent)"></div></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Preview — Parsed Data</div>
+            <button class="btn btn-ai">◈ Process with AI →</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>AI Category</th><th>Confidence</th></tr></thead>
+              <tbody>
+                <tr><td>01 Jan</td><td>AWS EC2 Instance</td><td class="mono">₹22,000</td><td><span class="badge badge-info">Software</span></td><td class="mono color-success">98%</td></tr>
+                <tr><td>03 Jan</td><td>Google Ads Campaign</td><td class="mono">₹14,500</td><td><span class="badge badge-info">Marketing</span></td><td class="mono color-success">95%</td></tr>
+                <tr><td>05 Jan</td><td>IndiGo Flight BLR-DEL</td><td class="mono">₹8,200</td><td><span class="badge badge-info">Travel</span></td><td class="mono color-success">99%</td></tr>
+                <tr><td>07 Jan</td><td>Vendor ABC Pvt Ltd</td><td class="mono">₹50,000</td><td><span class="badge badge-critical">Flagged</span></td><td class="mono color-warning">41%</td></tr>
+                <tr><td>09 Jan</td><td>MacBook Pro 14"</td><td class="mono">₹1,92,000</td><td><span class="badge badge-info">Equipment</span></td><td class="mono color-success">97%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col" style="max-width:280px">
+        <div class="card mb-4">
+          <div class="card-header"><div class="card-title">Processing Stats</div></div>
+          <div class="p-4" style="padding-top:0;display:flex;flex-direction:column;gap:var(--s3)">
+            <div><div class="text-sm color-text2 mb-2">Rows parsed</div><div class="font-mono" style="font-size:20px">248</div></div>
+            <div class="divider"></div>
+            <div><div class="text-sm color-text2 mb-2">Auto-categorized</div><div class="font-mono" style="font-size:20px;color:var(--success)">231</div></div>
+            <div class="divider"></div>
+            <div><div class="text-sm color-text2 mb-2">Needs review</div><div class="font-mono" style="font-size:20px;color:var(--warning)">17</div></div>
+            <div class="divider"></div>
+            <div><div class="text-sm color-text2 mb-2">Duplicates found</div><div class="font-mono" style="font-size:20px;color:var(--danger)">2</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Supported Formats</div></div>
+          <div class="p-4" style="padding-top:0;display:flex;flex-direction:column;gap:var(--s2)">
+            <div class="flex items-center gap-2"><span class="badge badge-success">CSV</span><span class="text-sm color-text2">Bank exports, spreadsheets</span></div>
+            <div class="flex items-center gap-2"><span class="badge badge-success">XLSX</span><span class="text-sm color-text2">Excel workbooks</span></div>
+            <div class="flex items-center gap-2"><span class="badge badge-info">PDF</span><span class="text-sm color-text2">Invoices (OCR)</span></div>
+            <div class="flex items-center gap-2"><span class="badge badge-info">JPG/PNG</span><span class="text-sm color-text2">Receipt photos (OCR)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE: ANALYTICS
+  ══════════════════════════════════════ -->
+  <div class="page-content" id="page-analytics">
+    <div class="section-hd mb-4"><div class="section-title" style="font-size:14px">Analytics</div></div>
+    <div class="grid-3 mb-4">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Category Spend</div></div>
+        <div class="p-4" style="padding-top:0"><div class="chart-box" style="height:200px"><canvas id="catChart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Department Spend</div></div>
+        <div class="p-4" style="padding-top:0"><div class="chart-box" style="height:200px"><canvas id="deptAnalChart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Vendor Spend</div></div>
+        <div class="p-4" style="padding-top:0"><div class="chart-box" style="height:200px"><canvas id="vendorAnalChart"></canvas></div></div>
+      </div>
+    </div>
+    <div class="row mb-4">
+      <div class="col" style="flex:2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Monthly Trend — 6 Months</div></div>
+          <div class="p-4" style="padding-top:0"><div class="chart-box" style="height:200px"><canvas id="monthlyChart"></canvas></div></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Cost Saving Opportunities</div></div>
+          <div class="p-4" style="padding-top:0;display:flex;flex-direction:column;gap:var(--s3)">
+            <div class="flex justify-between items-center">
+              <div><div style="font-size:13px;font-weight:500">Cancel unused SaaS</div><div class="text-sm color-text2">Figma, Webflow, Loom</div></div>
+              <span class="font-mono color-success">₹18,400</span>
+            </div>
+            <div class="divider"></div>
+            <div class="flex justify-between items-center">
+              <div><div style="font-size:13px;font-weight:500">Renegotiate AWS</div><div class="text-sm color-text2">Reserved instance deal</div></div>
+              <span class="font-mono color-success">₹6,600</span>
+            </div>
+            <div class="divider"></div>
+            <div class="flex justify-between items-center">
+              <div><div style="font-size:13px;font-weight:500">Consolidate PM tools</div><div class="text-sm color-text2">Jira + Asana overlap</div></div>
+              <span class="font-mono color-success">₹5,200</span>
+            </div>
+            <div class="divider"></div>
+            <div class="flex justify-between items-center">
+              <div><div style="font-size:13px;font-weight:500">Travel policy audit</div><div class="text-sm color-text2">Sales dept overruns</div></div>
+              <span class="font-mono color-success">₹12,000</span>
+            </div>
+            <div class="divider"></div>
+            <div class="flex justify-between items-center" style="font-weight:600">
+              <div>Total potential savings</div>
+              <span class="font-mono color-success">₹42,200/mo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE: ANOMALIES
+  ══════════════════════════════════════ -->
+  <div class="page-content" id="page-anomalies">
+    <div class="section-hd mb-4">
+      <div class="section-title" style="font-size:14px">Anomaly Detection</div>
+      <div class="section-actions">
+        <span class="badge badge-critical">2 Critical</span>
+        <span class="badge badge-warning">1 Warning</span>
+        <span class="badge badge-info">1 Info</span>
+        <button class="btn">Mark All Reviewed</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--s3)">
+      <div class="card">
+        <div class="p-4" style="display:flex;align-items:center;gap:var(--s4)">
+          <span class="badge badge-critical" style="padding:6px 10px;font-size:12px">CRITICAL</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Unknown Vendor — No PO Match</div>
+            <div class="text-sm color-text2">Vendor "ABC Trading Pvt Ltd" charged ₹50,000 on 12 Jan. 6× your average vendor payment. No purchase order found. Vendor not in approved list.</div>
+            <div class="text-sm color-text2 mt-3" style="margin-top:6px">Flagged: Jan 12, 2025 · Dept: Operations · Payment: NEFT</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div class="font-mono" style="font-size:18px;font-weight:500;color:var(--danger)">₹50,000</div>
+            <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">Jan 12, 2025</div>
+            <div class="flex gap-2">
+              <button class="btn btn-sm btn-danger">Flag</button>
+              <button class="btn btn-sm">Approve</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="p-4" style="display:flex;align-items:center;gap:var(--s4)">
+          <span class="badge badge-critical" style="padding:6px 10px;font-size:12px">CRITICAL</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Duplicate Invoice Detected</div>
+            <div class="text-sm color-text2">Invoice #INV-2291 from Zomato Business appears to have been paid twice — on Jan 8 and Jan 11. Amount: ₹18,400 each. Total duplicate risk: ₹18,400.</div>
+            <div class="text-sm color-text2 mt-3" style="margin-top:6px">Flagged: Jan 11, 2025 · Dept: HR &amp; Admin · Method: Credit Card</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div class="font-mono" style="font-size:18px;font-weight:500;color:var(--danger)">₹18,400</div>
+            <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">Jan 11, 2025</div>
+            <div class="flex gap-2">
+              <button class="btn btn-sm btn-danger">Dispute</button>
+              <button class="btn btn-sm">Ignore</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="p-4" style="display:flex;align-items:center;gap:var(--s4)">
+          <span class="badge badge-warning" style="padding:6px 10px;font-size:12px">WARNING</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">AWS Cloud Spend Spike</div>
+            <div class="text-sm color-text2">AWS billed ₹22,000 this month — 180% above your 3-month average of ₹7,850. No infrastructure change logged. Possible runaway EC2 instances or data transfer spike.</div>
+            <div class="text-sm color-text2 mt-3" style="margin-top:6px">Flagged: Jan 15, 2025 · Dept: Engineering · Category: Software</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div class="font-mono" style="font-size:18px;font-weight:500;color:var(--warning)">₹22,000</div>
+            <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">Jan 15, 2025</div>
+            <div class="flex gap-2">
+              <button class="btn btn-sm btn-danger">Alert Team</button>
+              <button class="btn btn-sm">Acknowledge</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="p-4" style="display:flex;align-items:center;gap:var(--s4)">
+          <span class="badge badge-info" style="padding:6px 10px;font-size:12px">INFO</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Missing Receipt — T&amp;E Claim</div>
+            <div class="text-sm color-text2">Employee Ravi Kumar (Sales) submitted ₹3,800 for client dinner on Jan 9 without attaching a receipt. Company policy requires receipts for claims above ₹2,000.</div>
+            <div class="text-sm color-text2 mt-3" style="margin-top:6px">Flagged: Jan 10, 2025 · Employee: Ravi Kumar · Method: Reimbursement</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div class="font-mono" style="font-size:18px;font-weight:500">₹3,800</div>
+            <div class="text-sm color-text2 mb-2" style="margin-bottom:8px">Jan 10, 2025</div>
+            <div class="flex gap-2">
+              <button class="btn btn-sm">Request Receipt</button>
+              <button class="btn btn-sm">Approve</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE: SUBSCRIPTIONS
+  ══════════════════════════════════════ -->
+  <div class="page-content" id="page-subscriptions">
+    <div class="section-hd mb-4">
+      <div>
+        <div class="section-title" style="font-size:14px">Subscription Manager</div>
+        <div class="text-sm color-text2" style="margin-top:4px">28 active · ₹1,84,000/mo · ₹22,08,000/yr</div>
+      </div>
+      <div class="section-actions">
+        <button class="btn">Export</button>
+        <button class="btn btn-primary">+ Add Subscription</button>
+      </div>
+    </div>
+    <div class="grid-3 mb-4">
+      <div class="kpi-card"><div class="kpi-label">Monthly Cost</div><div class="kpi-value">₹1,84,000</div><div class="kpi-delta down">↑ 8% vs last month</div></div>
+      <div class="kpi-card"><div class="kpi-label">Potential Waste</div><div class="kpi-value" style="color:var(--warning)">₹18,400</div><div class="kpi-delta warn">3 unused tools</div></div>
+      <div class="kpi-card"><div class="kpi-label">Renewing This Month</div><div class="kpi-value">3</div><div class="kpi-delta warn">Review before renewal</div></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Tool</th><th>Department</th><th>Monthly</th><th>Annual</th><th>Renewal</th><th>Last Used</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="sub-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE: FORECASTING
+  ══════════════════════════════════════ -->
+  <div class="page-content" id="page-forecasting">
+    <div class="section-hd mb-4"><div class="section-title" style="font-size:14px">Spend Forecasting</div></div>
+    <div class="grid-4 mb-4">
+      <div class="kpi-card"><div class="kpi-label">Predicted Spend (Feb)</div><div class="kpi-value">₹9,10,000</div><div class="kpi-delta down">↑ 8.1% projected</div><div class="kpi-note">87% confidence</div></div>
+      <div class="kpi-card"><div class="kpi-label">Burn Rate</div><div class="kpi-value">₹27,170</div><div class="kpi-delta warn">Per day</div><div class="kpi-note">31-day month</div></div>
+      <div class="kpi-card"><div class="kpi-label">Budget Risk</div><div class="kpi-value" style="color:var(--warning)">Medium</div><div class="kpi-delta warn">↑ Trending up</div><div class="kpi-note">2 depts at risk</div></div>
+      <div class="kpi-card"><div class="kpi-label">Cost Growth (MoM)</div><div class="kpi-value">+8.1%</div><div class="kpi-delta down">Accelerating</div><div class="kpi-note">Avg 3.2% past 6mo</div></div>
+    </div>
+    <div class="row mb-4">
+      <div class="col" style="flex:2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">6-Month Forecast vs Actual</div><div class="card-sub">Shaded area = confidence interval</div></div>
+          <div class="p-4" style="padding-top:0"><div class="chart-box" style="height:240px"><canvas id="forecastChart"></canvas></div></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Department Risk</div></div>
+          <div class="p-4" style="padding-top:0;display:flex;flex-direction:column;gap:var(--s3)">
+            <div>
+              <div class="flex justify-between mb-2" style="margin-bottom:6px">
+                <span class="text-sm">Sales</span>
+                <span class="font-mono text-sm color-danger">120% of budget</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill" style="width:100%;background:var(--danger)"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-2" style="margin-bottom:6px">
+                <span class="text-sm">Infrastructure</span>
+                <span class="font-mono text-sm color-warning">107% of budget</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill" style="width:100%;background:var(--warning)"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-2" style="margin-bottom:6px">
+                <span class="text-sm">Marketing</span>
+                <span class="font-mono text-sm color-warning">92% of budget</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill" style="width:92%;background:var(--warning)"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-2" style="margin-bottom:6px">
+                <span class="text-sm">Engineering</span>
+                <span class="font-mono text-sm color-success">84% of budget</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill" style="width:84%;background:var(--success)"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-2" style="margin-bottom:6px">
+                <span class="text-sm">Operations</span>
+                <span class="font-mono text-sm">73% of budget</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill" style="width:73%;background:var(--accent)"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-2" style="margin-bottom:6px">
+                <span class="text-sm">HR &amp; Admin</span>
+                <span class="font-mono text-sm color-success">60% of budget</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill" style="width:60%;background:var(--success)"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE: AI INSIGHTS
+  ══════════════════════════════════════ -->
+  <div class="page-content" id="page-aiinsights">
+    <div class="section-hd mb-4"><div class="section-title" style="font-size:14px">AI Insights</div><span class="badge badge-info">5 new insights</span></div>
+    <div class="row">
+      <div class="col" style="flex:1.4">
+        <div style="display:flex;flex-direction:column;gap:var(--s3)">
+          <div class="insight-card">
+            <div class="insight-icon" style="background:var(--danger-bg);font-size:16px">💸</div>
+            <div>
+              <div class="insight-title">Cancel 3 unused SaaS tools — save ₹2.2L/yr</div>
+              <div class="insight-body">Figma (47d unused), Webflow (22d unused), and Loom (31d unused) are collectively costing ₹18,400/month with zero usage. Cancelling all three saves ₹2,20,800 annually with no impact on operations.</div>
+              <div style="margin-top:var(--s3);display:flex;gap:var(--s2)">
+                <button class="btn btn-sm btn-primary">Take action</button>
+                <button class="btn btn-sm">Dismiss</button>
+              </div>
+            </div>
+          </div>
+          <div class="insight-card">
+            <div class="insight-icon" style="background:var(--warning-bg);font-size:16px">📊</div>
+            <div>
+              <div class="insight-title">Sales department 20% over budget — root cause identified</div>
+              <div class="insight-body">₹40,000 overspent primarily in client meals (₹22,000) and flights (₹18,000). 3 employees account for 78% of overrun. Consider enforcing pre-approval for T&E above ₹5,000.</div>
+              <div style="margin-top:var(--s3);display:flex;gap:var(--s2)">
+                <button class="btn btn-sm btn-primary">View breakdown</button>
+                <button class="btn btn-sm">Set policy</button>
+              </div>
+            </div>
+          </div>
+          <div class="insight-card">
+            <div class="insight-icon" style="background:var(--success-bg);font-size:16px">☁</div>
+            <div>
+              <div class="insight-title">AWS Reserved Instances could save ₹79,200/yr</div>
+              <div class="insight-body">Your EC2 usage pattern shows consistent baseline load. Switching from on-demand to 1-year reserved instances for your top 3 instance types reduces monthly AWS bill by ₹6,600 (30%).</div>
+              <div style="margin-top:var(--s3);display:flex;gap:var(--s2)">
+                <button class="btn btn-sm btn-ai">◈ Calculate savings</button>
+                <button class="btn btn-sm">Remind later</button>
+              </div>
+            </div>
+          </div>
+          <div class="insight-card">
+            <div class="insight-icon" style="background:var(--accent-bg);font-size:16px">⚖</div>
+            <div>
+              <div class="insight-title">Jira + Asana overlap — consolidate to one tool</div>
+              <div class="insight-body">Engineering uses Jira (₹8,200/mo) and Marketing uses Asana (₹4,100/mo) for similar project tracking needs. Consolidating to Jira with cross-team access saves ₹4,100/mo and reduces tool fragmentation.</div>
+              <div style="margin-top:var(--s3);display:flex;gap:var(--s2)">
+                <button class="btn btn-sm btn-primary">Review overlap</button>
+                <button class="btn btn-sm">Dismiss</button>
+              </div>
+            </div>
+          </div>
+          <div class="insight-card">
+            <div class="insight-icon" style="background:var(--success-bg);font-size:16px">↺</div>
+            <div>
+              <div class="insight-title">Engineering ₹40,000 under budget — reallocate to Q2</div>
+              <div class="insight-body">Engineering is tracking 16% under January budget due to delayed hiring. ₹40,000 can be carried forward and earmarked for Q2 infrastructure upgrade without affecting other teams.</div>
+              <div style="margin-top:var(--s3);display:flex;gap:var(--s2)">
+                <button class="btn btn-sm btn-primary">Reallocate funds</button>
+                <button class="btn btn-sm">Archive</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col" style="max-width:320px">
+        <div class="chat-panel">
+          <div class="card-header" style="border-bottom:1px solid var(--border);padding-bottom:var(--s3)">
+            <div>
+              <div class="card-title">Ask AI</div>
+              <div class="card-sub">Finance Q&A</div>
+            </div>
+            <span class="badge badge-success" style="gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block"></span>Online</span>
+          </div>
+          <div class="chat-messages" id="chat-messages">
+            <div class="chat-msg">
+              <div class="chat-avatar" style="background:var(--accent-bg);color:var(--accent)">AI</div>
+              <div class="chat-bubble">Hello! I'm your CashFlow AI assistant. Ask me anything about your company's spending — anomalies, budgets, vendor analysis, or cost-saving opportunities.</div>
+            </div>
+            <div class="chat-msg user">
+              <div class="chat-avatar" style="background:var(--surface3);color:var(--text2)">SR</div>
+              <div class="chat-bubble">Which department is spending the most on software?</div>
+            </div>
+            <div class="chat-msg">
+              <div class="chat-avatar" style="background:var(--accent-bg);color:var(--accent)">AI</div>
+              <div class="chat-bubble">Engineering leads software spend at ₹82,000/mo (AWS ₹22k, GitHub ₹8k, monitoring tools ₹12k, etc.). Marketing is second at ₹34,000/mo. Engineering is within budget; Marketing is at 94% of allocation.</div>
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <input class="input" id="chat-input" placeholder="Ask about your finances..." style="flex:1" onkeydown="if(event.key==='Enter')sendChat()"/>
+            <button class="btn btn-ai btn-sm" onclick="sendChat()">◈ Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE: BUDGETS
+  ══════════════════════════════════════ -->
+  <div class="page-content" id="page-budgets">
+    <div class="section-hd mb-4">
+      <div class="section-title" style="font-size:14px">Budget Management</div>
+      <div class="section-actions">
+        <button class="btn">Export</button>
+        <button class="btn btn-primary">+ Set Budget</button>
+      </div>
+    </div>
+    <div class="grid-4 mb-4">
+      <div class="kpi-card"><div class="kpi-label">Total Budget</div><div class="kpi-value">₹10,00,000</div><div class="kpi-note">January 2025</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Spent</div><div class="kpi-value">₹8,42,300</div><div class="kpi-delta down">84.2% utilized</div></div>
+      <div class="kpi-card"><div class="kpi-label">Remaining</div><div class="kpi-value">₹1,57,700</div><div class="kpi-note">7 days remaining</div></div>
+      <div class="kpi-card"><div class="kpi-label">Over Budget Depts</div><div class="kpi-value" style="color:var(--danger)">2</div><div class="kpi-delta down">Sales, Infra</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Department Budgets</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Department</th><th>Budget</th><th>Spent</th><th>Remaining</th><th>%Used</th><th>Progress</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:500">Engineering</td>
+              <td class="mono">₹2,50,000</td><td class="mono">₹2,10,000</td><td class="mono color-success">₹40,000</td>
+              <td class="mono">84%</td>
+              <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:84%;background:var(--success)"></div></div></td>
+              <td><span class="badge badge-success">On track</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">Marketing</td>
+              <td class="mono">₹2,00,000</td><td class="mono">₹1,85,000</td><td class="mono color-warning">₹15,000</td>
+              <td class="mono">92%</td>
+              <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:92%;background:var(--warning)"></div></div></td>
+              <td><span class="badge badge-warning">At risk</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">Sales</td>
+              <td class="mono">₹2,00,000</td><td class="mono color-danger">₹2,40,000</td><td class="mono color-danger">-₹40,000</td>
+              <td class="mono color-danger">120%</td>
+              <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:100%;background:var(--danger)"></div></div></td>
+              <td><span class="badge badge-critical">Over budget</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">Operations</td>
+              <td class="mono">₹1,50,000</td><td class="mono">₹1,10,000</td><td class="mono color-success">₹40,000</td>
+              <td class="mono">73%</td>
+              <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:73%;background:var(--accent)"></div></div></td>
+              <td><span class="badge badge-success">On track</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">Infrastructure</td>
+              <td class="mono">₹75,000</td><td class="mono color-danger">₹80,000</td><td class="mono color-danger">-₹5,000</td>
+              <td class="mono color-danger">107%</td>
+              <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:100%;background:var(--danger)"></div></div></td>
+              <td><span class="badge badge-critical">Over budget</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">HR &amp; Admin</td>
+              <td class="mono">₹1,00,000</td><td class="mono">₹60,000</td><td class="mono color-success">₹40,000</td>
+              <td class="mono">60%</td>
+              <td><div class="progress-track" style="width:140px"><div class="progress-fill" style="width:60%;background:var(--success)"></div></div></td>
+              <td><span class="badge badge-success">Under budget</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE: VENDORS
+  ══════════════════════════════════════ -->
+  <div class="page-content" id="page-vendors">
+    <div class="section-hd mb-4">
+      <div class="section-title" style="font-size:14px">Vendor Analytics</div>
+      <div class="section-actions">
+        <button class="btn">Export</button>
+        <button class="btn btn-primary">+ Add Vendor</button>
+      </div>
+    </div>
+    <div class="row mb-4">
+      <div class="col" style="flex:2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Top Vendors by Spend</div></div>
+          <div class="p-4" style="padding-top:0"><div class="chart-box" style="height:220px"><canvas id="vendorChart"></canvas></div></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Vendor Summary</div></div>
+          <div class="p-4" style="padding-top:0;display:flex;flex-direction:column;gap:var(--s3)">
+            <div class="flex justify-between"><span class="text-sm color-text2">Total vendors</span><span class="font-mono text-sm">48</span></div>
+            <div class="divider"></div>
+            <div class="flex justify-between"><span class="text-sm color-text2">Approved vendors</span><span class="font-mono text-sm color-success">44</span></div>
+            <div class="divider"></div>
+            <div class="flex justify-between"><span class="text-sm color-text2">Flagged vendors</span><span class="font-mono text-sm color-danger">2</span></div>
+            <div class="divider"></div>
+            <div class="flex justify-between"><span class="text-sm color-text2">New this month</span><span class="font-mono text-sm">3</span></div>
+            <div class="divider"></div>
+            <div class="flex justify-between"><span class="text-sm color-text2">Top vendor</span><span class="font-mono text-sm">AWS Cloud</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">All Vendors</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Vendor</th><th>Category</th><th>This Month</th><th>Last Month</th><th>YTD</th><th>Invoices</th><th>Status</th></tr></thead>
+          <tbody id="vendor-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE: DEPARTMENTS
+  ══════════════════════════════════════ -->
+  <div class="page-content" id="page-departments">
+    <div class="section-hd mb-4"><div class="section-title" style="font-size:14px">Department Analytics</div></div>
+    <div class="row mb-4">
+      <div class="col">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Department Spend Distribution</div></div>
+          <div class="p-4" style="padding-top:0"><div class="chart-box" style="height:220px"><canvas id="deptDistChart"></canvas></div></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Utilization by Department</div></div>
+          <div class="p-4" style="padding-top:0;display:flex;flex-direction:column;gap:var(--s4)">
+            <div><div class="flex justify-between mb-2" style="margin-bottom:6px"><span class="text-sm font-mono">Engineering</span><span class="text-sm color-text2">₹2,10,000</span></div><div class="progress-track"><div class="progress-fill" style="width:84%;background:var(--success)"></div></div></div>
+            <div><div class="flex justify-between mb-2" style="margin-bottom:6px"><span class="text-sm font-mono">Sales</span><span class="text-sm color-danger">₹2,40,000</span></div><div class="progress-track"><div class="progress-fill" style="width:100%;background:var(--danger)"></div></div></div>
+            <div><div class="flex justify-between mb-2" style="margin-bottom:6px"><span class="text-sm font-mono">Marketing</span><span class="text-sm color-text2">₹1,85,000</span></div><div class="progress-track"><div class="progress-fill" style="width:92%;background:var(--warning)"></div></div></div>
+            <div><div class="flex justify-between mb-2" style="margin-bottom:6px"><span class="text-sm font-mono">Operations</span><span class="text-sm color-text2">₹1,10,000</span></div><div class="progress-track"><div class="progress-fill" style="width:73%;background:var(--accent)"></div></div></div>
+            <div><div class="flex justify-between mb-2" style="margin-bottom:6px"><span class="text-sm font-mono">HR &amp; Admin</span><span class="text-sm color-text2">₹60,000</span></div><div class="progress-track"><div class="progress-fill" style="width:60%;background:var(--success)"></div></div></div>
+            <div><div class="flex justify-between mb-2" style="margin-bottom:6px"><span class="text-sm font-mono">Infrastructure</span><span class="text-sm color-danger">₹80,000</span></div><div class="progress-track"><div class="progress-fill" style="width:100%;background:var(--danger)"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Department Detail Table</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Department</th><th>Head Count</th><th>Budget</th><th>Spent</th><th>Per Head</th><th>Top Category</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td style="font-weight:500">Engineering</td><td class="mono">24</td><td class="mono">₹2,50,000</td><td class="mono">₹2,10,000</td><td class="mono">₹8,750</td><td><span class="badge badge-info">Software</span></td><td><span class="badge badge-success">On track</span></td></tr>
+            <tr><td style="font-weight:500">Sales</td><td class="mono">18</td><td class="mono">₹2,00,000</td><td class="mono color-danger">₹2,40,000</td><td class="mono">₹13,333</td><td><span class="badge badge-info">Travel</span></td><td><span class="badge badge-critical">Over budget</span></td></tr>
+            <tr><td style="font-weight:500">Marketing</td><td class="mono">12</td><td class="mono">₹2,00,000</td><td class="mono">₹1,85,000</td><td class="mono">₹15,416</td><td><span class="badge badge-info">Marketing</span></td><td><span class="badge badge-warning">At risk</span></td></tr>
+            <tr><td style="font-weight:500">Operations</td><td class="mono">8</td><td class="mono">₹1,50,000</td><td class="mono">₹1,10,000</td><td class="mono">₹13,750</td><td><span class="badge badge-info">Vendors</span></td><td><span class="badge badge-success">On track</span></td></tr>
+            <tr><td style="font-weight:500">HR &amp; Admin</td><td class="mono">6</td><td class="mono">₹1,00,000</td><td class="mono">₹60,000</td><td class="mono">₹10,000</td><td><span class="badge badge-info">Office</span></td><td><span class="badge badge-success">Under budget</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE: REPORTS
+  ══════════════════════════════════════ -->
+  <div class="page-content" id="page-reports">
+    <div class="section-hd mb-4">
+      <div class="section-title" style="font-size:14px">Reports</div>
+      <div class="section-actions">
+        <button class="btn">Export PDF</button>
+        <button class="btn">Export CSV</button>
+        <button class="btn btn-primary">Email Report</button>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="card" style="cursor:pointer">
+        <div class="p-4">
+          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">≡</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Monthly Report</div>
+          <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">Complete January 2025 spend summary with charts, anomalies, and insights</div>
+          <div class="flex gap-2">
+            <button class="btn btn-sm btn-primary">Export PDF</button>
+            <button class="btn btn-sm">CSV</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="cursor:pointer">
+        <div class="p-4">
+          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">⊟</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Department Report</div>
+          <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">Per-department breakdown with budget utilization and cost per head</div>
+          <div class="flex gap-2">
+            <button class="btn btn-sm btn-primary">Export PDF</button>
+            <button class="btn btn-sm">CSV</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="cursor:pointer">
+        <div class="p-4">
+          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">◎</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Vendor Report</div>
+          <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">Top vendors, spend trends, flagged vendors, invoice history</div>
+          <div class="flex gap-2">
+            <button class="btn btn-sm btn-primary">Export PDF</button>
+            <button class="btn btn-sm">CSV</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="cursor:pointer">
+        <div class="p-4">
+          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">↺</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Subscription Waste Report</div>
+          <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">Unused tools, waste analysis, cancellation recommendations</div>
+          <div class="flex gap-2">
+            <button class="btn btn-sm btn-primary">Export PDF</button>
+            <button class="btn btn-sm">CSV</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="cursor:pointer">
+        <div class="p-4">
+          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">▤</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Budget vs Actual</div>
+          <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">Variance analysis across all departments with alerts for overruns</div>
+          <div class="flex gap-2">
+            <button class="btn btn-sm btn-primary">Export PDF</button>
+            <button class="btn btn-sm">CSV</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="cursor:pointer">
+        <div class="p-4">
+          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">→</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Forecast Report</div>
+          <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">Next 3-month predicted spend, burn rate, and budget risk analysis</div>
+          <div class="flex gap-2">
+            <button class="btn btn-sm btn-primary">Export PDF</button>
+            <button class="btn btn-sm">CSV</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="cursor:pointer">
+        <div class="p-4">
+          <div style="font-size:24px;margin-bottom:var(--s3);opacity:0.5">⚠</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Anomaly Report</div>
+          <div class="text-sm color-text2 mb-4" style="margin-bottom:var(--s3)">All flagged transactions, duplicates, unusual spend with audit trail</div>
+          <div class="flex gap-2">
+            <button class="btn btn-sm btn-primary">Export PDF</button>
+            <button class="btn btn-sm">CSV</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE: SETTINGS
+  ══════════════════════════════════════ -->
+  <div class="page-content" id="page-settings">
+    <div class="section-hd mb-4"><div class="section-title" style="font-size:14px">Settings</div></div>
+    <div class="row">
+      <div class="col" style="max-width:200px;flex-shrink:0">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div class="nav-item active" style="border-radius:var(--r-btn)">Profile</div>
+          <div class="nav-item" style="border-radius:var(--r-btn)">Team Members</div>
+          <div class="nav-item" style="border-radius:var(--r-btn)">Budgets</div>
+          <div class="nav-item" style="border-radius:var(--r-btn)">Integrations</div>
+          <div class="nav-item" style="border-radius:var(--r-btn)">Notifications</div>
+          <div class="nav-item" style="border-radius:var(--r-btn)">Billing</div>
+          <div class="nav-item" style="border-radius:var(--r-btn)">API Keys</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-header" style="border-bottom:1px solid var(--border);padding-bottom:var(--s4)">
+            <div class="card-title">Profile Settings</div>
+            <button class="btn btn-primary">Save changes</button>
+          </div>
+          <div class="p-4" style="display:flex;flex-direction:column;gap:var(--s4)">
+            <div class="row">
+              <div class="col">
+                <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">First Name</div>
+                <input class="input" value="Saurabh"/>
+              </div>
+              <div class="col">
+                <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Last Name</div>
+                <input class="input" value="Rao"/>
+              </div>
+            </div>
+            <div>
+              <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Email Address</div>
+              <input class="input" value="saurabh.rao@company.com"/>
+            </div>
+            <div>
+              <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Role</div>
+              <input class="input" value="Finance Lead" readonly style="color:var(--text2)"/>
+            </div>
+            <div>
+              <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Company</div>
+              <input class="input" value="Acme Technologies Pvt Ltd"/>
+            </div>
+            <div class="divider"></div>
+            <div class="text-sm" style="font-weight:600">Notification Preferences</div>
+            <div style="display:flex;flex-direction:column;gap:var(--s3)">
+              <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+                <div><div class="text-sm" style="font-weight:500">Anomaly alerts</div><div class="text-sm color-text2">Get notified when anomalies are detected</div></div>
+                <input type="checkbox" checked style="width:16px;height:16px;accent-color:var(--accent)"/>
+              </label>
+              <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+                <div><div class="text-sm" style="font-weight:500">Budget threshold alerts</div><div class="text-sm color-text2">Alert when department hits 80% of budget</div></div>
+                <input type="checkbox" checked style="width:16px;height:16px;accent-color:var(--accent)"/>
+              </label>
+              <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+                <div><div class="text-sm" style="font-weight:500">Monthly reports</div><div class="text-sm color-text2">Auto-generate and email monthly report</div></div>
+                <input type="checkbox" checked style="width:16px;height:16px;accent-color:var(--accent)"/>
+              </label>
+              <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+                <div><div class="text-sm" style="font-weight:500">Subscription renewal reminders</div><div class="text-sm color-text2">7 days before any subscription renewal</div></div>
+                <input type="checkbox" style="width:16px;height:16px;accent-color:var(--accent)"/>
+              </label>
+            </div>
+            <div class="divider"></div>
+            <div class="text-sm" style="font-weight:600">API Keys</div>
+            <div>
+              <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Live API Key</div>
+              <div class="flex gap-2">
+                <input class="input" value="cf_live_••••••••••••••••••••••••" readonly style="font-family:var(--mono);font-size:12px;color:var(--text2)"/>
+                <button class="btn btn-sm">Show</button>
+                <button class="btn btn-sm">Rotate</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end main-wrap -->
+</div><!-- end app -->
+
+<!-- ══════════════════════════════════════════
+     FLOATING ACTION MENU (Improvement 5)
+══════════════════════════════════════════ -->
+<div class="fab-container">
+  <button class="fab-trigger" id="fab-trigger" onclick="toggleFab()" title="Quick Actions">+</button>
+  <div class="fab-menu" id="fab-menu">
+    <div class="fab-item" onclick="document.querySelector('[data-page=upload]').click();toggleFab()">
+      <span class="fab-dot" style="background:var(--accent)"></span> Upload Expenses
+    </div>
+    <div class="fab-item" onclick="document.querySelector('[data-page=transactions]').click();toggleFab()">
+      <span class="fab-dot" style="background:var(--success)"></span> Add Transaction
+    </div>
+    <div class="fab-item" onclick="document.querySelector('[data-page=aiinsights]').click();toggleFab()">
+      <span class="fab-dot" style="background:var(--purple,#8B5CF6)"></span> AI Analysis
+    </div>
+    <div class="fab-item" onclick="document.querySelector('[data-page=reports]').click();toggleFab()">
+      <span class="fab-dot" style="background:var(--warning)"></span> Generate Report
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ANOMALY DETAIL DRAWER (Improvement 4)
+══════════════════════════════════════════ -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="anomaly-drawer">
+  <div class="drawer-header">
+    <h3 id="drawer-title">Anomaly Detail</h3>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-section">
+      <div class="drawer-section-title">Transaction Details</div>
+      <div class="drawer-detail-row"><span class="drawer-detail-label">Vendor</span><span class="drawer-detail-value" id="drawer-vendor">—</span></div>
+      <div class="drawer-detail-row"><span class="drawer-detail-label">Amount</span><span class="drawer-detail-value font-mono" id="drawer-amount">—</span></div>
+      <div class="drawer-detail-row"><span class="drawer-detail-label">Date</span><span class="drawer-detail-value" id="drawer-date">—</span></div>
+      <div class="drawer-detail-row"><span class="drawer-detail-label">Department</span><span class="drawer-detail-value" id="drawer-dept">—</span></div>
+      <div class="drawer-detail-row"><span class="drawer-detail-label">Payment Method</span><span class="drawer-detail-value" id="drawer-method">—</span></div>
+      <div class="drawer-detail-row"><span class="drawer-detail-label">Severity</span><span id="drawer-severity">—</span></div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-section-title">AI Reasoning</div>
+      <div class="drawer-reasoning" id="drawer-reasoning">—</div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-section-title">Comparison</div>
+      <table class="comparison-table">
+        <thead><tr><th>Metric</th><th>This Transaction</th><th>Average</th><th>Δ Change</th></tr></thead>
+        <tbody id="drawer-comparison"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="drawer-actions">
+    <button class="btn btn-danger" onclick="closeDrawer()">Flag Transaction</button>
+    <button class="btn" onclick="closeDrawer()">Mark Reviewed</button>
+    <button class="btn btn-ai" onclick="closeDrawer()">◈ Ask AI</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADD TRANSACTION MODAL (Improvement 6)
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-add-txn">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Transaction</h3>
+      <button class="drawer-close" onclick="closeModal('modal-add-txn')">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:var(--s4)">
+      <div class="row">
+        <div class="col"><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Vendor</div><input class="input" placeholder="Vendor name"/></div>
+        <div class="col"><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Amount (₹)</div><input class="input" placeholder="0.00" style="font-family:var(--mono)"/></div>
+      </div>
+      <div class="row">
+        <div class="col"><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Category</div>
+          <select class="period-select" style="width:100%"><option>Software</option><option>Marketing</option><option>Travel</option><option>Office</option><option>Equipment</option><option>Vendors</option></select>
+        </div>
+        <div class="col"><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Department</div>
+          <select class="period-select" style="width:100%"><option>Engineering</option><option>Sales</option><option>Marketing</option><option>Operations</option><option>HR & Admin</option></select>
+        </div>
+      </div>
+      <div><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Date</div><input class="input" type="date"/></div>
+      <div><div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Notes</div><input class="input" placeholder="Optional notes..."/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-add-txn')">Cancel</button>
+      <button class="btn btn-primary" onclick="closeModal('modal-add-txn')">Add Transaction</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     NOTIFICATIONS PANEL
+════════════════════════════════════════════ -->
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-panel-header">
+    <h3>Notifications</h3>
+    <div class="flex gap-2">
+      <button class="btn btn-sm" onclick="markAllRead()" style="font-size:11px">Mark all read</button>
+      <button class="drawer-close" onclick="toggleNotifPanel()">✕</button>
+    </div>
+  </div>
+  <div class="notif-panel-body">
+    <div class="notif-item unread">
+      <div class="notif-dot-indicator" style="background:var(--danger)"></div>
+      <div class="notif-item-body">
+        <div class="notif-item-title">Critical Anomaly — Unknown Vendor</div>
+        <div class="notif-item-sub">ABC Trading Pvt Ltd charged ₹50,000 with no PO match or approved vendor status.</div>
+        <div class="notif-item-time">2 min ago · Anomalies</div>
+      </div>
+    </div>
+    <div class="notif-item unread">
+      <div class="notif-dot-indicator" style="background:var(--danger)"></div>
+      <div class="notif-item-body">
+        <div class="notif-item-title">Duplicate Invoice Detected</div>
+        <div class="notif-item-sub">Invoice #INV-2291 from Zomato Business appears to be paid twice. Review required.</div>
+        <div class="notif-item-time">18 min ago · Anomalies</div>
+      </div>
+    </div>
+    <div class="notif-item unread">
+      <div class="notif-dot-indicator" style="background:var(--warning)"></div>
+      <div class="notif-item-body">
+        <div class="notif-item-title">Sales dept at 120% of budget</div>
+        <div class="notif-item-sub">Sales has exceeded their January budget by ₹40,000. Requires approval.</div>
+        <div class="notif-item-time">1 hr ago · Budgets</div>
+      </div>
+    </div>
+    <div class="notif-item">
+      <div class="notif-dot-indicator" style="background:var(--success)"></div>
+      <div class="notif-item-body">
+        <div class="notif-item-title">CSV upload complete</div>
+        <div class="notif-item-sub">jan_expenses.csv processed — 248 rows, 231 auto-categorized, 17 need review.</div>
+        <div class="notif-item-time">3 hr ago · Upload</div>
+      </div>
+    </div>
+    <div class="notif-item">
+      <div class="notif-dot-indicator" style="background:var(--info)"></div>
+      <div class="notif-item-body">
+        <div class="notif-item-title">AI Insight generated</div>
+        <div class="notif-item-sub">5 new cost-saving opportunities found. Potential savings: ₹42,200/mo.</div>
+        <div class="notif-item-time">5 hr ago · AI Insights</div>
+      </div>
+    </div>
+    <div class="notif-item">
+      <div class="notif-dot-indicator" style="background:var(--warning)"></div>
+      <div class="notif-item-body">
+        <div class="notif-item-title">Notion subscription expiring</div>
+        <div class="notif-item-sub">Notion Pro (₹2,400/mo) renews in 7 days. Last used 2 days ago.</div>
+        <div class="notif-item-time">Yesterday · Subscriptions</div>
+      </div>
+    </div>
+    <div class="notif-item">
+      <div class="notif-dot-indicator" style="background:var(--accent)"></div>
+      <div class="notif-item-body">
+        <div class="notif-item-title">Monthly report ready</div>
+        <div class="notif-item-sub">December 2024 report has been generated. Click to download PDF.</div>
+        <div class="notif-item-time">Jan 1 · Reports</div>
+      </div>
+    </div>
+  </div>
+  <div class="notif-panel-footer">
+    <button class="btn w-full" style="width:100%;justify-content:center">View all notifications</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     CONFIRM MODAL (reusable)
+════════════════════════════════════════════ -->
+<div class="confirm-modal-overlay" id="confirm-modal">
+  <div class="confirm-modal">
+    <div class="confirm-modal-body">
+      <div class="confirm-modal-icon" id="confirm-icon" style="background:var(--danger-bg);margin:0 auto var(--s3)">⚠️</div>
+      <div class="confirm-modal-title" id="confirm-title">Are you sure?</div>
+      <div class="confirm-modal-text" id="confirm-text">This action cannot be undone.</div>
+      <div class="confirm-modal-actions">
+        <button class="btn" onclick="closeConfirm()">Cancel</button>
+        <button class="btn btn-danger" id="confirm-btn" onclick="executeConfirm()">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TOAST CONTAINER
+════════════════════════════════════════════ -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+const pageTitles = {
+  dashboard:'Dashboard', transactions:'Transactions', upload:'Upload Expenses',
+  analytics:'Analytics', anomalies:'Anomalies', subscriptions:'Subscriptions',
+  forecasting:'Forecasting', aiinsights:'AI Insights', budgets:'Budgets',
+  vendors:'Vendors', departments:'Departments', reports:'Reports', settings:'Settings'
+};
+
+document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+  item.addEventListener('click', () => {
+    const page = item.dataset.page;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.getElementById('header-title').textContent = pageTitles[page];
+  });
+});
+
+// ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// API INTEGRATION & DATA HYDRATION
+// ══════════════════════════════════════════
+const API_BASE = 'http://127.0.0.1:8000/api';
+
+const C = {
+  accent:  '#4F7CFF',
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger:  '#EF4444',
+  info:    '#38BDF8',
+  purple:  '#8B5CF6',
+  teal:    '#14B8A6',
+  orange:  '#F97316',
+  gray:    '#64748B',
+  text2:   '#9AA3B2',
+  text3:   '#5C6474',
+  surface2:'#1B2130',
+  border:  'rgba(255,255,255,0.06)',
+};
+
+const baseOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false }, tooltip: {
+    backgroundColor: '#1b2130', borderColor: C.border, borderWidth: 1, titleColor: C.text2, bodyColor: '#e6e8ee', padding: 10, cornerRadius: 6,
+  }},
+  scales: {
+    x: { grid:{color:C.border,drawTicks:false}, ticks:{color:C.text3,font:{size:11,family:"'JetBrains Mono', monospace"},maxTicksLimit:8} },
+    y: { grid:{color:C.border,drawTicks:false}, ticks:{color:C.text3,font:{size:11,family:"'JetBrains Mono', monospace"}} }
+  }
+};
+
+const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
+const formatDate = (ds) => new Date(ds).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+
+async function fetchAPI(endpoint, method = 'GET', body = null) {
+  try {
+    const opts = { method, headers: {} };
+    if (body) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    const res = await fetch(`${API_BASE}${endpoint}`, opts);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error('API Error:', err);
+    return null;
+  }
+}
+
+async function renderKPIs() {
+  const summary = await fetchAPI('/summary');
+  if (!summary) return;
+
+  const mnt = summary.month_data;
+  const prev = summary.previous_month_data;
+  
+  if (mnt) {
+    document.getElementById('kpi-total').textContent = formatCurrency(mnt.total_spend);
+    const mntPct = prev && prev.total_spend ? ((mnt.total_spend - prev.total_spend) / prev.total_spend * 100).toFixed(1) : 0;
+    const dp = document.getElementById('kpi-total-delta');
+    
+    // For spending, going down is good!
+    if (mntPct >= 0) {
+      dp.textContent = `↑ ${Math.abs(mntPct)}% vs last month`;
+      dp.className = 'kpi-delta down'; // negative style (red)
+    } else {
+      dp.textContent = `↓ ${Math.abs(mntPct)}% vs last month`;
+      dp.className = 'kpi-delta up'; // positive style (green)
+    }
+    
+    document.getElementById('kpi-budget-rem').textContent = formatCurrency(Math.max(0, summary.total_budget - mnt.total_spend));
+    const budgetPct = summary.total_budget ? ((summary.total_budget - mnt.total_spend) / summary.total_budget * 100).toFixed(1) : 0;
+    document.getElementById('kpi-budget-pct').textContent = `${budgetPct}% left`;
+    document.getElementById('kpi-budget-pct').className = `kpi-delta ${budgetPct < 20 ? 'warn' : 'up'}`;
+
+    document.getElementById('kpi-txns-count').textContent = mnt.transaction_count;
+    const avg = mnt.transaction_count ? (mnt.total_spend / mnt.transaction_count) : 0;
+    document.getElementById('kpi-txns-avg').textContent = `Avg ${formatCurrency(avg)} per txn`;
+  }
+}
+
+async function renderCharts() {
+  const byDept = await fetchAPI('/summary/spend-by-dept');
+  if (byDept) {
+    const labels = byDept.map(d => d.department);
+    const data = byDept.map(d => d.total_spend);
+    const colors = [C.accent, C.danger, C.warning, C.success, C.purple, C.teal];
+    
+    if(document.getElementById('deptChart')) {
+      new Chart(document.getElementById('deptChart'), {
+        type: 'bar',
+        data: { labels, datasets:[{label:'Spent', data, backgroundColor: colors, borderRadius:3, borderWidth:0}] },
+        options:{...baseOpts,plugins:{...baseOpts.plugins,tooltip:{...baseOpts.plugins.tooltip, callbacks:{label:c=>formatCurrency(c.parsed.y)}}}}
+      });
+    }
+
+    if(document.getElementById('deptDistChart')) {
+      new Chart(document.getElementById('deptDistChart'),{
+        type:'doughnut',
+        data:{ labels, datasets:[{data, backgroundColor:colors, borderWidth:0, hoverOffset:4}] },
+        options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+          plugins:{legend:{display:true,position:'bottom',labels:{color:C.text2,font:{size:11},boxWidth:10,padding:12}},
+            tooltip:{backgroundColor:'#1b2130',borderColor:C.border,borderWidth:1,bodyColor:'#e6e8ee', callbacks:{label:c=>formatCurrency(c.parsed)}}}
+        }});
+    }
+  }
+
+  const byCat = await fetchAPI('/summary/spend-by-category');
+  if (byCat) {
+    const labels = byCat.map(d => d.category);
+    const data = byCat.map(d => d.total_spend);
+    const colors = [C.purple, C.accent, C.success, C.warning, C.gray, C.teal, C.orange];
+
+    if(document.getElementById('donutChart')) {
+      new Chart(document.getElementById('donutChart'), {
+        type: 'doughnut',
+        data: { labels, datasets:[{ data, backgroundColor:colors, borderWidth:0, hoverOffset:4 }] },
+        options: { responsive:true,maintainAspectRatio:false,cutout:'72%',
+          plugins:{legend:{display:false},tooltip:{backgroundColor:'#1b2130',borderColor:C.border,borderWidth:1,bodyColor:'#e6e8ee',
+            callbacks:{label:c=>` ${c.label}: ${formatCurrency(c.parsed)}`}}}
+        }
+      });
+    }
+
+    if(document.getElementById('catChart')) {
+      new Chart(document.getElementById('catChart'),{type:'bar',data:{
+        labels, datasets:[{data, backgroundColor:C.accent, borderRadius:3, borderWidth:0}]
+      },options:{...baseOpts,indexAxis:'y',plugins:{...baseOpts.plugins,tooltip:{...baseOpts.plugins.tooltip,
+        callbacks:{label:c=>formatCurrency(c.parsed.x)}
+      }}}});
+    }
+  }
+
+  const trend = await fetchAPI('/summary/trend');
+  if (trend && trend.length > 0 && document.getElementById('trendChart')) {
+    const dates = trend.map(d => formatDate(d.date));
+    const vals = trend.map(d => d.daily_spend);
+    new Chart(document.getElementById('trendChart'), {
+      type: 'line',
+      data: {
+        labels: dates,
+        datasets: [{label:'Daily Spend', data:vals, borderColor:C.accent, backgroundColor:'rgba(79,124,255,0.05)', tension:0.4, borderWidth:1.5, pointRadius:0, fill:true}]
+      },
+      options: { ...baseOpts, plugins:{ ...baseOpts.plugins, tooltip:{...baseOpts.plugins.tooltip,
+        callbacks:{label:c=>` ${c.dataset.label}: ${formatCurrency(c.parsed.y)}`}
+      }}}
+    });
+  }
+
+  const bud = await fetchAPI('/budgets/utilization');
+  if (bud && document.getElementById('budgetChart')) {
+    const labels = bud.map(b => b.department);
+    const budgetData = bud.map(b => b.amount);
+    const actualData = bud.map(b => b.spent);
+    new Chart(document.getElementById('budgetChart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets:[
+          {label:'Budget',data:budgetData,backgroundColor:C.gray,borderRadius:3,borderWidth:0},
+          {label:'Actual',data:actualData,backgroundColor:C.accent,borderRadius:3,borderWidth:0},
+        ]
+      },
+      options:{...baseOpts,plugins:{...baseOpts.plugins,legend:{display:false},tooltip:{...baseOpts.plugins.tooltip,
+        callbacks:{label:c=>`${c.dataset.label}: ${formatCurrency(c.parsed.y)}`}
+      }}}
+    });
+  }
+}
+
+async function renderTransactions() {
+  const txns = await fetchAPI('/transactions?limit=25');
+  const txnBody = document.getElementById('txn-tbody');
+  if (!txnBody || !txns) return;
+  txnBody.innerHTML = '';
+  
+  txns.forEach(t => {
+    let statusClass = 'badge-warning';
+    if (t.review_status === 'approved') statusClass = 'badge-success';
+    else if (t.review_status === 'flagged') statusClass = 'badge-critical';
+    
+    let receiptStatus = t.has_receipt ? 'Yes' : 'No';
+    let receiptClass = t.has_receipt ? 'color-success' : 'color-danger';
+
+    txnBody.innerHTML += `<tr>
+      <td class="mono text2">${formatDate(t.date)}</td>
+      <td style="font-weight:500">${t.vendor_name}</td>
+      <td><span class="badge badge-info">${t.category || 'Uncategorized'}</span></td>
+      <td class="text2">${t.department || 'N/A'}</td>
+      <td class="mono">${formatCurrency(t.amount)}</td>
+      <td class="text2">${t.payment_method || '-'}</td>
+      <td class="mono text3">${t.invoice_number || '-'}</td>
+      <td><span class="badge ${statusClass}">${t.review_status || 'pending'}</span></td>
+      <td class="${receiptClass}" style="font-size:12px;font-weight:500">${receiptStatus}</td>
+      <td><button class="btn btn-sm">View</button></td>
+    </tr>`;
+  });
+}
+
+const GLOBAL_ANOMALIES = [];
+
+async function renderAnomalies() {
+  const anomalies = await fetchAPI('/anomalies');
+  if (!anomalies) return;
+  
+  GLOBAL_ANOMALIES.length = 0;
+  GLOBAL_ANOMALIES.push(...anomalies);
+  
+  let criticalCount = anomalies.filter(a => a.severity === 'critical').length;
+  let unresolvedVal = anomalies.filter(a => a.status !== 'resolved').reduce((acc, a) => acc + (a.transaction?.amount || 0), 0);
+  
+  const acount = document.getElementById('kpi-anomalies-count');
+  if (acount) {
+    acount.textContent = anomalies.filter(a => a.status !== 'resolved').length;
+    document.getElementById('kpi-anomalies-detail').textContent = `${criticalCount} critical`;
+    document.getElementById('kpi-anomalies-val').textContent = `${formatCurrency(unresolvedVal)} under review`;
+  }
+}
+
+async function initDashboard() {
+  await renderKPIs();
+  await renderCharts();
+  await renderTransactions();
+  await renderAnomalies();
+}
+
+window.addEventListener('DOMContentLoaded', initDashboard);
+
+// ══════════════════════════════════════════
+// AI CHAT
+// ══════════════════════════════════════════
+let chatHistory = [];
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML += `<div class="chat-msg user"><div class="chat-avatar" style="background:var(--surface3);color:var(--text2)">SR</div><div class="chat-bubble">${msg}</div></div>`;
+  input.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+
+  const loadingId = 'loading-' + Date.now();
+  msgs.innerHTML += `<div class="chat-msg" id="${loadingId}"><div class="chat-avatar" style="background:var(--accent-bg);color:var(--accent)">AI</div><div class="chat-bubble" style="opacity:0.7">◈ Thinking...</div></div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try {
+    const res = await fetchAPI('/chat', 'POST', { message: msg, context: chatHistory });
+    document.getElementById(loadingId).remove();
+    
+    if (res && res.reply) {
+      chatHistory.push({ role: "user", content: msg });
+      chatHistory.push({ role: "assistant", content: res.reply });
+      msgs.innerHTML += `<div class="chat-msg"><div class="chat-avatar" style="background:var(--accent-bg);color:var(--accent)">AI</div><div class="chat-bubble">${res.reply}</div></div>`;
+    } else {
+      msgs.innerHTML += `<div class="chat-msg"><div class="chat-avatar" style="background:var(--danger-bg);color:var(--danger)">!</div><div class="chat-bubble" style="color:var(--danger)">Failed to connect to AI engine.</div></div>`;
+    }
+  } catch (e) {
+    document.getElementById(loadingId)?.remove();
+    msgs.innerHTML += `<div class="chat-msg"><div class="chat-avatar" style="background:var(--danger-bg);color:var(--danger)">!</div><div class="chat-bubble" style="color:var(--danger)">Network error connecting to API.</div></div>`;
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ══════════════════════════════════════════
+// UPLOAD SIMULATE
+// ══════════════════════════════════════════
+function simulateUpload() {
+  const dz = document.getElementById('dropzone');
+  dz.style.borderColor = 'var(--accent)';
+  dz.style.background = 'var(--accent-bg)';
+  setTimeout(() => { dz.style.borderColor = ''; dz.style.background = ''; }, 600);
+}
+
+// Period tabs on dashboard
+document.querySelectorAll('.period-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.period-tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+  });
+});
+
+// ══════════════════════════════════════════
+// FLOATING ACTION MENU
+// ══════════════════════════════════════════
+function toggleFab() {
+  const trigger = document.getElementById('fab-trigger');
+  const menu = document.getElementById('fab-menu');
+  trigger.classList.toggle('open');
+  menu.classList.toggle('open');
+}
+
+// ══════════════════════════════════════════
+// ANOMALY DETAIL DRAWER
+// ══════════════════════════════════════════
+function openDrawer(idx) {
+  const d = GLOBAL_ANOMALIES[idx];
+  if (!d) return;
+  
+  let typeLabel = d.type === 'duplicate' ? 'Duplicate Detected' : d.type === 'spike' ? 'Spend Spike' : d.type === 'unknown_vendor' ? 'Unknown Vendor' : 'Missing Receipt';
+  document.getElementById('drawer-title').textContent = typeLabel;
+  document.getElementById('drawer-vendor').textContent = d.transaction ? d.transaction.vendor_name : 'Unknown';
+  document.getElementById('drawer-amount').textContent = d.transaction ? formatCurrency(d.transaction.amount) : '₹0';
+  document.getElementById('drawer-date').textContent = d.transaction ? formatDate(d.transaction.date) : '-';
+  document.getElementById('drawer-dept').textContent = d.transaction ? (d.transaction.department || 'All') : '-';
+  document.getElementById('drawer-method').textContent = d.transaction ? (d.transaction.payment_method || '-') : '-';
+  
+  const sevBadge = d.severity === 'critical' ? 'badge-critical' : d.severity === 'warning' ? 'badge-warning' : 'badge-info';
+  const sevLabel = d.severity.charAt(0).toUpperCase() + d.severity.slice(1);
+  document.getElementById('drawer-severity').innerHTML = `<span class="badge ${sevBadge}">${sevLabel}</span>`;
+  document.getElementById('drawer-reasoning').innerHTML = d.description || 'No detailed reasoning provided by the AI.';
+  
+  const compBody = document.getElementById('drawer-comparison');
+  compBody.innerHTML = ''; 
+  
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('anomaly-drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('anomaly-drawer').classList.remove('open');
+}
+
+
+// Attach click handlers to anomaly rows in dashboard
+document.querySelectorAll('#page-dashboard .anomaly-row').forEach((row, idx) => {
+  row.addEventListener('click', () => openDrawer(idx));
+});
+
+// Attach click handlers to anomaly cards on anomalies page
+document.querySelectorAll('#page-anomalies .card').forEach((card, idx) => {
+  card.style.cursor = 'pointer';
+  card.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') return;
+    openDrawer(idx);
+  });
+});
+
+// ══════════════════════════════════════════
+// MODAL HELPERS
+// ══════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// Wire "+ Add" button on transactions page to open modal
+document.querySelectorAll('#page-transactions .btn-primary').forEach(btn => {
+  if (btn.textContent.trim() === '+ Add') {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openModal('modal-add-txn');
+    });
+  }
+});
+// ══════════════════════════════════════════
+// ERROR ALERT DIALOG
+// ══════════════════════════════════════════
+function showErrorDialog(title, desc, code) {
+  document.getElementById('error-title').textContent = title || 'Error Detected';
+  document.getElementById('error-desc').textContent = desc || 'We\'ve encountered an error processing your request. Please try again or contact support if the issue persists.';
+  document.getElementById('error-code').textContent = code || 'Error Code: 500 — Internal Server Error';
+  document.getElementById('error-dialog-overlay').classList.add('open');
+}
+function closeErrorDialog() {
+  document.getElementById('error-dialog-overlay').classList.remove('open');
+}
+
+// Wire "Process with AI" button to simulate error
+document.querySelectorAll('.btn-ai').forEach(btn => {
+  if (btn.textContent.includes('Process with AI')) {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      // Simulate processing then error
+      btn.textContent = '◈ Processing...';
+      btn.style.opacity = '0.7';
+      btn.style.pointerEvents = 'none';
+      setTimeout(() => {
+        btn.textContent = '◈ Process with AI →';
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+        showErrorDialog(
+          'AI Processing Failed',
+          'The AI categorization engine could not process your uploaded file. The file may be corrupted, exceed the 10MB limit, or contain an unsupported format.',
+          'ERR_AI_PARSE_FAILED — Model timeout after 30s'
+        );
+      }, 1500);
+    });
+  }
+});
+
+// ══════════════════════════════════════════
+// LIQUID GLASS — Apply to AI elements
+// ══════════════════════════════════════════
+document.querySelectorAll('.kpi-card').forEach(c => c.classList.add('glass-hover'));
+document.querySelectorAll('.chat-msg:not(.user) .chat-avatar').forEach(a => a.classList.add('liquid-glass'));
+document.querySelectorAll('.insight-icon').forEach(i => i.classList.add('liquid-glass'));
+document.querySelectorAll('.btn-ai').forEach(b => b.classList.add('liquid-glass'));
+
+// ══════════════════════════════════════════
+// NOTIFICATIONS PANEL
+// ══════════════════════════════════════════
+function toggleNotifPanel() {
+  document.getElementById('notif-panel').classList.toggle('open');
+}
+function markAllRead() {
+  document.querySelectorAll('.notif-item.unread').forEach(i => i.classList.remove('unread'));
+  document.querySelector('.notif-dot')?.remove();
+  showToast('All notifications marked as read', 'success');
+}
+
+// Wire the bell button in header
+document.querySelector('.header-icon-btn[title="Notifications"]').addEventListener('click', () => {
+  toggleNotifPanel();
+});
+
+// ══════════════════════════════════════════
+// TOAST NOTIFICATION SYSTEM
+// ══════════════════════════════════════════
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toast-container');
+  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span style="font-size:13px">${icons[type] || 'ℹ'}</span><span>${message}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(8px)';
+    toast.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+    setTimeout(() => toast.remove(), 200);
+  }, duration);
+}
+
+// Wire action buttons to toasts for demo polish
+document.querySelectorAll('[onclick*="closeModal"]').forEach(btn => {
+  if (btn.textContent.trim() === 'Add Transaction') {
+    btn.addEventListener('click', () => showToast('Transaction added successfully', 'success'));
+  }
+});
+document.querySelectorAll('#page-anomalies .btn-sm').forEach(btn => {
+  const txt = btn.textContent.trim();
+  if (txt === 'Approve') btn.addEventListener('click', () => showToast('Transaction approved', 'success'));
+  if (txt === 'Flag' || txt === 'Dispute') btn.addEventListener('click', () => showToast('Transaction flagged for review', 'warning'));
+  if (txt === 'Acknowledge') btn.addEventListener('click', () => showToast('Alert acknowledged', 'info'));
+  if (txt === 'Alert Team') btn.addEventListener('click', () => showToast('Team notified via email', 'info'));
+  if (txt === 'Request Receipt') btn.addEventListener('click', () => showToast('Receipt request sent to Ravi Kumar', 'info'));
+});
+document.querySelectorAll('#page-settings .btn-primary').forEach(btn => {
+  if (btn.textContent.trim() === 'Save changes') btn.addEventListener('click', () => showToast('Settings saved successfully', 'success'));
+});
+document.querySelectorAll('#page-transactions .btn').forEach(btn => {
+  if (btn.textContent.trim() === 'Export CSV') btn.addEventListener('click', () => showToast('CSV export started — check your downloads', 'info'));
+});
+
+// ══════════════════════════════════════════
+// CONFIRM MODAL (reusable)
+// ══════════════════════════════════════════
+let confirmCallback = null;
+function showConfirm(title, text, callback, type = 'danger') {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-text').textContent = text;
+  const icons = { danger: '⚠️', warning: '⚠️', info: 'ℹ️' };
+  const colors = { danger: 'var(--danger-bg)', warning: 'var(--warning-bg)', info: 'var(--info-bg)' };
+  document.getElementById('confirm-icon').textContent = icons[type];
+  document.getElementById('confirm-icon').style.background = colors[type];
+  confirmCallback = callback;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeConfirm() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  confirmCallback = null;
+}
+function executeConfirm() {
+  if (confirmCallback) confirmCallback();
+  closeConfirm();
+}
+
+// Wire drawer Flag button to show confirm
+document.querySelector('#anomaly-drawer .btn-danger')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  showConfirm(
+    'Flag this transaction?',
+    'This will escalate the transaction for finance team review. The vendor will be notified.',
+    () => { closeDrawer(); showToast('Transaction flagged and escalated', 'warning'); }
+  );
+});
+
+// ══════════════════════════════════════════
+// TOOLTIPS on action buttons
+// ══════════════════════════════════════════
+function addTooltips() {
+  const tips = [
+    ['[title="Notifications"]', 'View notifications (3 unread)'],
+    ['.fab-trigger', 'Quick actions'],
+    ['.btn-ai', 'AI-powered analysis'],
+  ];
+  tips.forEach(([sel, tip]) => {
+    document.querySelectorAll(sel).forEach(el => {
+      if (!el.getAttribute('data-tooltip')) el.setAttribute('data-tooltip', tip);
+    });
+  });
+}
+addTooltips();
+
+// ══════════════════════════════════════════
+// ACTIVITY LOG on Dashboard
+// ══════════════════════════════════════════
+const activityLog = [
+  { color: 'var(--danger)',  title: 'Anomaly flagged',       sub: 'ABC Trading Pvt — No PO match detected', time: '2m ago' },
+  { color: 'var(--success)', title: 'CSV processed',          sub: '248 rows imported, 231 categorized',     time: '3h ago' },
+  { color: 'var(--accent)',  title: 'Transaction added',      sub: 'IndiGo Airlines ₹8,200 — Sales dept',   time: '5h ago' },
+  { color: 'var(--warning)', title: 'Budget threshold hit',   sub: 'Sales dept reached 100% of budget',      time: '6h ago' },
+  { color: 'var(--info)',    title: 'AI Insight generated',   sub: '5 new cost-saving recommendations',      time: '8h ago' },
+  { color: 'var(--success)', title: 'Report generated',       sub: 'Monthly summary emailed to finance team','time': 'Yesterday' },
+];
+
+// Inject activity log card at bottom of dashboard if container exists
+(function injectActivityLog() {
+  const dashPage = document.getElementById('page-dashboard');
+  if (!dashPage) return;
+  const actCard = document.createElement('div');
+  actCard.style.marginTop = '32px';
+  actCard.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Activity Log</div>
+          <div class="card-sub">Recent actions and events</div>
+        </div>
+        <button class="btn btn-sm">View all</button>
+      </div>
+      <div style="padding:var(--s4) var(--s5)">
+        ${activityLog.map(a => `
+          <div class="activity-item">
+            <div class="activity-line">
+              <div class="activity-dot" style="background:${a.color}"></div>
+            </div>
+            <div class="activity-body">
+              <div class="activity-title">${a.title}</div>
+              <div class="activity-sub">${a.sub}</div>
+              <div class="activity-time">${a.time}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  dashPage.appendChild(actCard);
+})();
+</script>
+
+<!-- ══════════════════════════════════════════
+     SVG FILTER: LIQUID GLASS DISTORTION
+══════════════════════════════════════════ -->
+<svg style="display:none">
+  <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
+    <feTurbulence type="fractalNoise" baseFrequency="0.001 0.005" numOctaves="1" seed="17" result="turbulence"/>
+    <feComponentTransfer in="turbulence" result="mapped">
+      <feFuncR type="gamma" amplitude="1" exponent="10" offset="0.5"/>
+      <feFuncG type="gamma" amplitude="0" exponent="1" offset="0"/>
+      <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5"/>
+    </feComponentTransfer>
+    <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap"/>
+    <feSpecularLighting in="softMap" surfaceScale="5" specularConstant="1" specularExponent="100" lightingColor="white" result="specLight">
+      <fePointLight x="-200" y="-200" z="300"/>
+    </feSpecularLighting>
+    <feComposite in="specLight" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="litImage"/>
+    <feDisplacementMap in="SourceGraphic" in2="softMap" scale="200" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<!-- ══════════════════════════════════════════
+     ERROR ALERT DIALOG (21st.dev/extendui)
+══════════════════════════════════════════ -->
+<div class="error-dialog-overlay" id="error-dialog-overlay" onclick="if(event.target===this)closeErrorDialog()">
+  <div class="error-dialog">
+    <div class="error-dialog-header">
+      <div class="error-icon-row">
+        <div class="error-icon"></div>
+        <h3 id="error-title">Error Detected</h3>
+      </div>
+    </div>
+    <div class="error-dialog-desc" id="error-desc">
+      We've encountered an error processing your request. Please try again or contact support if the issue persists.
+    </div>
+    <div class="error-dialog-code">
+      <span class="error-code-dot"></span>
+      <span id="error-code">Error Code: 500 — Internal Server Error</span>
+    </div>
+    <div class="error-dialog-footer">
+      <button class="btn" onclick="closeErrorDialog()">Dismiss</button>
+      <button class="btn btn-error" onclick="closeErrorDialog()">Contact Support</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

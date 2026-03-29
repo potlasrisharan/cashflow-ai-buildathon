@@ -1,0 +1,24 @@
+# ── Environment (NEVER commit real secrets) ─────────────────
+.env
+.env.*
+!.env.example
+
+# ── Python artifacts ───────────────────────────────────
+venv/
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── System files ────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log

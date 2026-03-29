@@ -1,0 +1,36 @@
+# ── System files ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Python / Backend ────────────────────────────────────────
+cashflow-backend/.env
+cashflow-backend/venv/
+cashflow-backend/.venv/
+cashflow-backend/__pycache__/
+cashflow-backend/**/__pycache__/
+cashflow-backend/*.pyc
+cashflow-backend/**/*.pyc
+cashflow-backend/*.pyo
+cashflow-backend/*.pyd
+cashflow-backend/*.egg-info/
+cashflow-backend/dist/
+cashflow-backend/build/
+cashflow-backend/.pytest_cache/
+cashflow-backend/.mypy_cache/
+cashflow-backend/.ruff_cache/
+
+# ── Secrets / Credentials (NEVER commit these) ──────────────
+*.env
+.env.*
+!*.env.example
+secrets.json
+credentials.json
+
+# ── Logs ────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Node (if frontend tooling is added later) ───────────────
+node_modules/
+.next/
+dist/
