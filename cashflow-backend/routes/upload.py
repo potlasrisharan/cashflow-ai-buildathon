@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # ── Security limits ───────────────────────────────────────────────────────────
 MAX_FILE_SIZE_BYTES = settings.max_upload_bytes
 MAX_CSV_ROWS = 5000
+BATCH_INSERT_SIZE = 250
 
 ALLOWED_CSV_COLUMNS = {
     "date", "vendor", "amount", "department",
@@ -63,6 +64,36 @@ def _parse_date(value: object) -> str:
     if pd.isna(parsed):
         raise ValueError("invalid date")
     return parsed.date().isoformat()
+
+
+def _clean_text(value: object, fallback: str, max_len: int) -> str:
+    if value is None:
+        return fallback
+    text = str(value).strip()
+    if not text or text.lower() in {"none", "nan", "null"}:
+        return fallback
+    return text[:max_len]
+
+
+def _clean_optional_text(value: object, max_len: int) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text or text.lower() in {"none", "nan", "null"}:
+        return None
+    return text[:max_len]
+
+
+def _parse_confidence(value: object) -> float:
+    try:
+        conf = float(value)
+    except Exception:
+        return 0.85
+    if conf < 0:
+        return 0.0
+    if conf > 1:
+        return 1.0
+    return conf
 
 
 def _validate_receipt_signature(content: bytes, content_type: str) -> None:
@@ -189,16 +220,16 @@ async def upload_csv(file: UploadFile = File(...)):
         records.append(
             {
                 "date": txn_date,
-                "vendor": str(row.get("vendor", "Unknown")).strip()[:200] or "Unknown",
-                "category": str(row.get("category", "Other")).strip()[:80] or "Other",
-                "department": str(row.get("department", "Operations")).strip()[:80] or "Operations",
+                "vendor": _clean_text(row.get("vendor"), "Unknown", 200),
+                "category": _clean_text(row.get("category"), "Other", 80),
+                "department": _clean_text(row.get("department"), "Operations", 80),
                 "amount": amount,
-                "payment_method": str(row.get("payment_method", "Bank Transfer")).strip()[:80] or "Bank Transfer",
-                "invoice_no": str(row.get("invoice_no", "")).strip()[:120] if row.get("invoice_no") else None,
-                "notes": str(row.get("notes", "")).strip()[:500] if row.get("notes") else None,
+                "payment_method": _clean_text(row.get("payment_method"), "Bank Transfer", 80),
+                "invoice_no": _clean_optional_text(row.get("invoice_no"), 120),
+                "notes": _clean_optional_text(row.get("notes"), 500),
                 "status": "pending",
                 "has_receipt": False,
-                "ai_confidence": float(row.get("ai_confidence", 0.85)),
+                "ai_confidence": _parse_confidence(row.get("ai_confidence", 0.85)),
             }
         )
 
@@ -207,12 +238,18 @@ async def upload_csv(file: UploadFile = File(...)):
 
     inserted_ids: list[str] = []
     try:
-        insert_resp = supabase.table("transactions").insert(records).execute()
-        inserted_ids = [r["id"] for r in (insert_resp.data or [])]
+        for start in range(0, len(records), BATCH_INSERT_SIZE):
+            batch = records[start : start + BATCH_INSERT_SIZE]
+            insert_resp = supabase.table("transactions").insert(batch).execute()
+            batch_ids = [r["id"] for r in (insert_resp.data or [])]
+            inserted_ids.extend(batch_ids)
         logger.info("upload_csv inserted %d transactions", len(inserted_ids))
-    except Exception:
+    except Exception as exc:
         logger.exception("upload_csv transaction insert failed")
-        raise HTTPException(status_code=500, detail="Failed to save transactions.")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save transactions. Insert error: {str(exc)[:220]}",
+        )
 
     # ── Anomaly Detection ─────────────────────────────────────
     flagged_count = 0
