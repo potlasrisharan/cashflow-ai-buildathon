@@ -2847,15 +2847,23 @@ async function fetchAPI(endpoint, method = 'GET', body = null) {
   try {
     const opts = { method, headers: {} };
     if (body) {
-      opts.headers['Content-Type'] = 'application/json';
-      opts.body = JSON.stringify(body);
+      if (body instanceof FormData) {
+        opts.body = body;
+        // Do NOT set Content-Type header for FormData, browser needs to set it with boundary
+      } else {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
     }
     const res = await fetch(`${API_BASE}${endpoint}`, opts);
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return await res.json();
+    let data;
+    try { data = await res.json(); } catch(e) { data = null; }
+    
+    if (!res.ok) throw new Error(data?.detail || `Request failed (${res.status})`);
+    return data;
   } catch (err) {
     console.error('API Error:', err);
-    return null;
+    throw err;
   }
 }
 
@@ -3105,10 +3113,7 @@ document.querySelectorAll('.btn-ai').forEach(btn => {
           endpoint = '/upload/receipt';
         }
 
-        const result = await fetchAPI(endpoint, {
-          method: 'POST',
-          body: formData
-        });
+        const result = await fetchAPI(endpoint, 'POST', formData);
 
         if (result && (result.status === 'success' || result.transactions)) {
           showToast(`File processed successfully! ${result.transactions ? result.transactions.length : ''} transactions added.`, 'success');
