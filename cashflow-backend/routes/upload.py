@@ -56,12 +56,23 @@ async def upload_csv(file: UploadFile = File(...)):
     # Normalize column names
     df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
 
+    # Alias mapping for easier processing
+    aliases = {
+        "description": "vendor",
+        "merchant": "vendor",
+        "payee": "vendor",
+        "total": "amount"
+    }
+    for alias, target in aliases.items():
+        if alias in df.columns and target not in df.columns:
+            df.rename(columns={alias: target}, inplace=True)
+
     missing = REQUIRED_CSV_COLUMNS - set(df.columns)
     if missing:
         raise HTTPException(
             status_code=422,
             detail=f"CSV is missing required columns: {missing}. "
-                   f"Required: date, vendor, amount"
+                   f"Required: date, vendor, amount (Got: {list(df.columns)})"
         )
 
     df = df.where(pd.notnull(df), None)
