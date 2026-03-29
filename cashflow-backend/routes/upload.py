@@ -13,7 +13,7 @@ from config import settings
 from db import supabase
 from services.ai_service import categorize_transactions
 from services.ocr_service import extract_receipt_data
-from services.anomaly_service import recalculate_month_anomalies
+from services.anomaly_service import detect_anomalies
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -265,12 +265,11 @@ async def upload_csv(file: UploadFile = File(...)):
     flagged_count = 0
     if inserted_ids:
         try:
-            touched_months = sorted({str(record["date"])[:7] for record in records if record.get("date")})
-            scan_results = []
-            for month in touched_months:
-                scan_results.append(await recalculate_month_anomalies(month))
-            flagged_count = sum(result.get("anomalies_found", 0) for result in scan_results)
-            logger.info("upload_csv recalculated anomalies for %d months", len(scan_results))
+            anomalies = await detect_anomalies(records, inserted_ids)
+            flagged_count = len(anomalies)
+            if anomalies:
+                supabase.table("anomalies").insert(anomalies).execute()
+                logger.info("upload_csv logged %d anomalies", flagged_count)
         except Exception:
             logger.exception("upload_csv anomaly detection failed")
 

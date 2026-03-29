@@ -15,7 +15,7 @@ from typing import Literal
 from db import supabase
 from uuid import UUID
 from routes._validators import month_bounds
-from services.anomaly_service import recalculate_month_anomalies
+from services.anomaly_service import detect_anomalies
 
 router = APIRouter()
 
@@ -89,9 +89,9 @@ async def create_transaction(body: TransactionCreate):
     created = resp.data[0]
 
     try:
-        month = str(created.get("date", ""))[:7]
-        if month:
-            await recalculate_month_anomalies(month)
+        anomalies = await detect_anomalies([created], [created["id"]])
+        if anomalies:
+            supabase.table("anomalies").insert(anomalies).execute()
     except Exception:
         # Don't fail transaction creation if anomaly detection fails.
         pass
@@ -150,37 +150,16 @@ def get_transaction(txn_id: UUID = Path(...)):
 
 
 @router.patch("/{txn_id}")
-async def update_transaction(txn_id: UUID, body: TransactionUpdate):
-    existing_resp = supabase.table("transactions").select("id,date").eq("id", str(txn_id)).single().execute()
-    if not existing_resp.data:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-
+def update_transaction(txn_id: UUID, body: TransactionUpdate):
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
     resp = supabase.table("transactions").update(updates).eq("id", str(txn_id)).execute()
     if not resp.data:
         raise HTTPException(status_code=404, detail="Transaction not found")
-    updated = resp.data[0]
-
-    try:
-        month = str((updated.get("date") or existing_resp.data.get("date") or ""))[:7]
-        if month:
-            await recalculate_month_anomalies(month)
-    except Exception:
-        pass
-
-    return updated
+    return resp.data[0]
 
 
 @router.delete("/{txn_id}", status_code=204)
-async def delete_transaction(txn_id: UUID):
-    existing_resp = supabase.table("transactions").select("id,date").eq("id", str(txn_id)).single().execute()
-    existing = existing_resp.data or {}
+def delete_transaction(txn_id: UUID):
     supabase.table("transactions").delete().eq("id", str(txn_id)).execute()
-    try:
-        month = str(existing.get("date", ""))[:7]
-        if month:
-            await recalculate_month_anomalies(month)
-    except Exception:
-        pass

@@ -12,18 +12,12 @@ from typing import Any
 from collections import defaultdict
 import numpy as np
 
-from db import supabase
-from routes._validators import month_bounds
-
 
 # ── Thresholds ────────────────────────────────────────────────────────────────
 SPIKE_Z_THRESHOLD     = 2.5    # Critical if z > 3, Warning if z > 2.5
 UNKNOWN_VENDOR_MAX    = 1      # Vendor with ≤1 prior transactions = unknown
 RECEIPT_THRESHOLD     = 2000   # Reimbursement above this requires receipt
 DUPLICATE_WINDOW_DAYS = 30     # Look-back window for duplicate detection
-PAGE_SIZE             = 1000
-DELETE_BATCH_SIZE     = 200
-RECALCULABLE_STATUSES = ("open", "reviewed")
 
 
 async def detect_anomalies(
@@ -127,78 +121,6 @@ async def detect_anomalies(
             ))
 
     return anomalies
-
-
-def _chunked(items: list[Any], size: int) -> list[list[Any]]:
-    return [items[idx: idx + size] for idx in range(0, len(items), size)]
-
-
-def _fetch_transactions_for_month(month: str) -> list[dict[str, Any]]:
-    start, end = month_bounds(month)
-    rows: list[dict[str, Any]] = []
-    offset = 0
-
-    while True:
-        resp = (
-            supabase.table("transactions")
-            .select("id,vendor,amount,department,category,date,has_receipt,payment_method")
-            .gte("date", start)
-            .lt("date", end)
-            .order("date")
-            .range(offset, offset + PAGE_SIZE - 1)
-            .execute()
-        )
-        chunk = resp.data or []
-        rows.extend(chunk)
-        if len(chunk) < PAGE_SIZE:
-            break
-        offset += PAGE_SIZE
-
-    return rows
-
-
-def clear_recalculable_anomalies(transaction_ids: list[str]) -> int:
-    txn_ids = [txn_id for txn_id in transaction_ids if txn_id]
-    if not txn_ids:
-        return 0
-
-    deleted = 0
-    for batch in _chunked(txn_ids, DELETE_BATCH_SIZE):
-        resp = (
-            supabase.table("anomalies")
-            .delete()
-            .in_("transaction_id", batch)
-            .in_("status", list(RECALCULABLE_STATUSES))
-            .execute()
-        )
-        deleted += len(resp.data or [])
-
-    return deleted
-
-
-async def recalculate_month_anomalies(month: str) -> dict[str, Any]:
-    """
-    Rebuild recalculable anomalies for an entire month so dashboard totals stay
-    in sync when users add, edit, delete, or bulk-upload expenses.
-    """
-    transactions = _fetch_transactions_for_month(month)
-    transaction_ids = [str(txn["id"]) for txn in transactions if txn.get("id")]
-
-    if transaction_ids:
-        clear_recalculable_anomalies(transaction_ids)
-
-    anomalies = await detect_anomalies(transactions, transaction_ids) if transaction_ids else []
-    inserted = 0
-
-    for batch in _chunked(anomalies, DELETE_BATCH_SIZE):
-        resp = supabase.table("anomalies").insert(batch).execute()
-        inserted += len(resp.data or [])
-
-    return {
-        "month": month,
-        "transactions_scanned": len(transactions),
-        "anomalies_found": inserted,
-    }
 
 
 def _make_anomaly(

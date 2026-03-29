@@ -669,8 +669,6 @@ tbody tr:hover td {
 .btn-ai span { 
   position: relative; 
   z-index: 2; 
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff;
 }
 .btn-ai:hover {
   box-shadow: 0 0 20px rgba(79,124,255,0.4), 0 0 8px rgba(139,92,246,0.3);
@@ -693,15 +691,6 @@ tbody tr:hover td {
 }
 .btn-ai:hover::after {
   transform: translateX(100%);
-}
-#chat-send-btn {
-  min-width: 72px;
-  justify-content: center;
-}
-#chat-send-btn span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* ─── IMPROVEMENT 3: Floating Action Menu ─── */
@@ -2431,27 +2420,13 @@ tbody tr {
               </label>
             </div>
             <div class="divider"></div>
-            <div class="text-sm" style="font-weight:600">API Access</div>
-            <div style="display:flex;flex-direction:column;gap:var(--s3)">
-              <div class="text-sm color-text2" id="settings-api-status">No API key saved in this browser.</div>
-              <div>
-                <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Live API Key</div>
-                <input
-                  class="input"
-                  id="settings-api-key"
-                  type="password"
-                  placeholder="Paste your Render API key"
-                  autocomplete="off"
-                  spellcheck="false"
-                  style="font-family:var(--mono);font-size:12px"
-                />
-              </div>
+            <div class="text-sm" style="font-weight:600">API Keys</div>
+            <div>
+              <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Live API Key</div>
               <div class="flex gap-2">
-                <button class="btn btn-sm btn-primary" id="settings-api-save-btn"><span>Save Key</span></button>
-                <button class="btn btn-sm" id="settings-api-clear-btn"><span>Clear</span></button>
-              </div>
-              <div class="text-sm color-text2">
-                Stored only in this browser so the deployed frontend can authenticate with your Render backend.
+                <input class="input" value="cf_live_••••••••••••••••••••••••" readonly style="font-family:var(--mono);font-size:12px;color:var(--text2)"/>
+                <button class="btn btn-sm"><span>Show</span></button>
+                <button class="btn btn-sm"><span>Rotate</span></button>
               </div>
             </div>
           </div>
@@ -2550,42 +2525,6 @@ tbody tr {
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('modal-add-txn')">Cancel</button>
       <button class="btn btn-primary" id="add-txn-submit">Add Transaction</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════
-     API KEY MODAL
-══════════════════════════════════════════ -->
-<div class="modal-overlay" id="modal-api-key">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>API Key Required</h3>
-      <button class="drawer-close" onclick="cancelApiKeyPrompt()">✕</button>
-    </div>
-    <div class="modal-body" style="display:flex;flex-direction:column;gap:var(--s4)">
-      <div class="text-sm color-text2" id="api-key-modal-help">
-        This deployment requires your backend API key before it can load data.
-      </div>
-      <div>
-        <div class="text-sm color-text2 mb-2" style="margin-bottom:6px">Live API Key</div>
-        <input
-          class="input"
-          id="api-key-modal-input"
-          type="password"
-          placeholder="Paste your Render API key"
-          autocomplete="off"
-          spellcheck="false"
-          style="font-family:var(--mono);font-size:12px"
-        />
-      </div>
-      <div class="text-sm color-text2">
-        The key is stored only in this browser and sent to the backend as `X-API-Key`.
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="cancelApiKeyPrompt()">Cancel</button>
-      <button class="btn btn-primary" id="api-key-modal-save-btn"><span>Save & Retry</span></button>
     </div>
   </div>
 </div>
@@ -2719,28 +2658,10 @@ function switchPage(page) {
 // ══════════════════════════════════════════
 const API_BASE = 'https://cashflow-api-dedx.onrender.com/api';
 const API_KEY_STORAGE_KEY = 'cashflow_api_key';
-const FRONTEND_BUILD = '2026-03-29.4+auth-recovery';
+const FRONTEND_BUILD = '2026-03-29.3+stabilize-upload-refresh';
 
 function getApiKey() {
   return (localStorage.getItem(API_KEY_STORAGE_KEY) || '').trim();
-}
-
-function setApiKey(value) {
-  const trimmed = String(value || '').trim();
-  if (trimmed) {
-    localStorage.setItem(API_KEY_STORAGE_KEY, trimmed);
-  } else {
-    localStorage.removeItem(API_KEY_STORAGE_KEY);
-  }
-  syncApiKeyUI();
-  return trimmed;
-}
-
-function maskApiKey(value) {
-  const key = String(value || '').trim();
-  if (!key) return 'not saved';
-  if (key.length <= 6) return `${key.slice(0, 2)}••${key.slice(-1)}`;
-  return `${key.slice(0, 4)}••••••${key.slice(-4)}`;
 }
 
 function escapeHTML(value) {
@@ -2760,7 +2681,6 @@ console.info(`[CashFlow AI] build=${FRONTEND_BUILD} host=${window.location.host}
 
 let selectedFile = null;
 const CHART_REGISTRY = {};
-let AVAILABLE_MONTHS = [];
 const C = {
   accent:  '#4F7CFF',
   success: '#22C55E',
@@ -2791,126 +2711,6 @@ const baseOpts = {
 
 const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
 const formatDate = (ds) => new Date(ds).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
-let pendingApiKeyPrompt = null;
-let resolvePendingApiKeyPrompt = null;
-
-function syncApiKeyUI() {
-  const apiKey = getApiKey();
-  const settingsInput = document.getElementById('settings-api-key');
-  const settingsStatus = document.getElementById('settings-api-status');
-  const modalInput = document.getElementById('api-key-modal-input');
-
-  if (settingsInput && document.activeElement !== settingsInput) {
-    settingsInput.value = apiKey;
-  }
-  if (settingsStatus) {
-    settingsStatus.textContent = apiKey
-      ? `Saved locally: ${maskApiKey(apiKey)}`
-      : 'No API key saved in this browser.';
-  }
-  if (modalInput && document.activeElement !== modalInput && !document.getElementById('modal-api-key')?.classList.contains('open')) {
-    modalInput.value = apiKey;
-  }
-}
-
-async function rawApiRequest(endpoint, method = 'GET', body = null, apiKeyOverride = '') {
-  const opts = { method, headers: {} };
-  const apiKey = String(apiKeyOverride || '').trim();
-  if (apiKey) {
-    opts.headers['X-API-Key'] = apiKey;
-    opts.headers['Authorization'] = `Bearer ${apiKey}`;
-  }
-  if (body) {
-    if (body instanceof FormData) {
-      opts.body = body;
-    } else {
-      opts.headers['Content-Type'] = 'application/json';
-      opts.body = JSON.stringify(body);
-    }
-  }
-  const res = await fetch(`${API_BASE}${endpoint}`, opts);
-  let data;
-  try { data = await res.json(); } catch(e) { data = null; }
-  return { res, data };
-}
-
-async function verifyApiKeyCandidate(candidate) {
-  const apiKey = String(candidate || '').trim();
-  if (!apiKey) throw new Error('Enter your API key to continue.');
-  const { res, data } = await rawApiRequest('/summary/months', 'GET', null, apiKey);
-  if (res.status === 401) {
-    throw new Error('Unauthorized. That API key was rejected.');
-  }
-  if (!res.ok) {
-    throw new Error(data?.detail || `Request failed (${res.status})`);
-  }
-  return apiKey;
-}
-
-function closeApiKeyPrompt(resolvedValue = '') {
-  document.getElementById('modal-api-key')?.classList.remove('open');
-  if (resolvePendingApiKeyPrompt) {
-    resolvePendingApiKeyPrompt(String(resolvedValue || '').trim());
-  }
-  pendingApiKeyPrompt = null;
-  resolvePendingApiKeyPrompt = null;
-}
-
-function promptForApiKey(message) {
-  const overlay = document.getElementById('modal-api-key');
-  const help = document.getElementById('api-key-modal-help');
-  const input = document.getElementById('api-key-modal-input');
-  if (!overlay || !help || !input) return Promise.resolve('');
-
-  help.textContent = message || 'Enter your backend API key to continue.';
-  input.value = getApiKey();
-  overlay.classList.add('open');
-  requestAnimationFrame(() => {
-    input.focus();
-    input.select();
-  });
-
-  if (pendingApiKeyPrompt) return pendingApiKeyPrompt;
-
-  pendingApiKeyPrompt = new Promise((resolve) => {
-    resolvePendingApiKeyPrompt = resolve;
-  });
-  return pendingApiKeyPrompt;
-}
-
-async function saveApiKeyFromPrompt() {
-  const input = document.getElementById('api-key-modal-input');
-  try {
-    const apiKey = await verifyApiKeyCandidate(input?.value || '');
-    setApiKey(apiKey);
-    showToast('API key saved locally.', 'success');
-    closeApiKeyPrompt(apiKey);
-  } catch (err) {
-    showToast(err.message || 'Unable to save API key.', 'error');
-  }
-}
-
-function cancelApiKeyPrompt() {
-  closeApiKeyPrompt('');
-}
-
-async function saveApiKeyFromSettings() {
-  const input = document.getElementById('settings-api-key');
-  try {
-    const apiKey = await verifyApiKeyCandidate(input?.value || '');
-    setApiKey(apiKey);
-    showToast('API key saved locally. Reconnecting...', 'success');
-    await hydrateMonthOptions();
-    await refreshAllData();
-  } catch (err) {
-    showToast(err.message || 'Unable to save API key.', 'error');
-  }
-}
-
-function clearStoredApiKey() {
-  setApiKey('');
-  showToast('Stored API key cleared from this browser.', 'info');
-}
 
 function upsertChart(canvasId, config) {
   const canvas = document.getElementById(canvasId);
@@ -2922,25 +2722,29 @@ function upsertChart(canvasId, config) {
   return CHART_REGISTRY[canvasId];
 }
 
-async function fetchAPI(endpoint, method = 'GET', body = null, allowAuthRetry = true) {
+async function fetchAPI(endpoint, method = 'GET', body = null) {
   try {
+    const opts = { method, headers: {} };
     const apiKey = getApiKey();
-    const { res, data } = await rawApiRequest(endpoint, method, body, apiKey);
-
-    if (res.status === 401) {
-      if (allowAuthRetry) {
-        const recoveredKey = await promptForApiKey(
-          apiKey
-            ? 'The saved API key was rejected by the backend. Update it to continue.'
-            : 'This deployment is protected. Enter your backend API key to continue.'
-        );
-        if (recoveredKey) {
-          return fetchAPI(endpoint, method, body, false);
-        }
+    if (apiKey) {
+      opts.headers['X-API-Key'] = apiKey;
+      opts.headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+    if (body) {
+      if (body instanceof FormData) {
+        opts.body = body;
+        // Do NOT set Content-Type header for FormData, browser needs to set it with boundary
+      } else {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
       }
-      throw new Error(apiKey
-        ? 'Unauthorized. The current API key was rejected.'
-        : 'Unauthorized. API key required.');
+    }
+    const res = await fetch(`${API_BASE}${endpoint}`, opts);
+    let data;
+    try { data = await res.json(); } catch(e) { data = null; }
+
+    if (res.status === 401 && !apiKey) {
+      throw new Error('Unauthorized. Set your API key in localStorage under "cashflow_api_key".');
     }
     if (!res.ok) throw new Error(data?.detail || `Request failed (${res.status})`);
     return data;
@@ -2965,62 +2769,25 @@ const MONTH_MAP = {
   december: '12',
 };
 
-function parseMonthValue(value) {
-  const raw = String(value || '').trim().toLowerCase();
-  if (/^\d{4}-\d{2}$/.test(raw)) return raw;
-  const match = raw.match(/^([a-z]+)\s+(\d{4})$/i);
-  if (match) {
-    const month = MONTH_MAP[match[1]];
-    if (month) return `${match[2]}-${month}`;
-  }
-  return '';
-}
-
 function toNumber(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }
 
-function monthDisplayLabel(monthIso) {
-  if (!/^\d{4}-\d{2}$/.test(monthIso || '')) return monthIso || 'January 2025';
-  const [year, month] = monthIso.split('-').map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
-
-async function hydrateMonthOptions(preferredMonth = null) {
-  const selector = document.getElementById('global-period-select');
-  if (!selector) return;
-
-  const currentMonth = preferredMonth || parseMonthValue(selector.value) || AVAILABLE_MONTHS[0] || '';
-
-  try {
-    const resp = await fetchAPI('/summary/months');
-    const months = Array.isArray(resp?.months)
-      ? resp.months.filter((month) => /^\d{4}-\d{2}$/.test(String(month)))
-      : [];
-    if (!months.length) return;
-
-    AVAILABLE_MONTHS = months;
-    selector.innerHTML = months
-      .map((month) => `<option value="${escapeHTML(month)}">${escapeHTML(monthDisplayLabel(month))}</option>`)
-      .join('');
-    selector.value = months.includes(currentMonth) ? currentMonth : months[0];
-  } catch (err) {
-    console.warn('Failed to hydrate month options:', err);
-  }
-}
-
 function getSelectedMonthParam() {
   const selector = document.getElementById('global-period-select');
-  return parseMonthValue(selector?.value || '') || AVAILABLE_MONTHS[0] || '2025-01';
+  const raw = (selector?.value || '').trim().toLowerCase();
+  const match = raw.match(/^([a-z]+)\s+(\d{4})$/i);
+  if (match) {
+    const month = MONTH_MAP[match[1]];
+    if (month) return `${match[2]}-${month}`;
+  }
+  return '2025-01';
 }
 
 function getSelectedMonthLabel() {
   const selector = document.getElementById('global-period-select');
-  const optionText = selector?.selectedOptions?.[0]?.textContent?.trim();
-  if (optionText) return optionText;
-  const parsed = parseMonthValue(selector?.value || '');
-  return parsed ? monthDisplayLabel(parsed) : 'January 2025';
+  return (selector?.value || 'January 2025').trim();
 }
 
 function monthLabelFromIso(monthIso) {
@@ -3051,18 +2818,13 @@ function txnStatusBadgeClass(status) {
   return 'badge-warning';
 }
 
-async function fetchAllTransactions(month = null) {
+async function fetchAllTransactions(month = getSelectedMonthParam()) {
   const all = [];
   let page = 1;
   const perPage = 200;
 
   while (true) {
-    const params = new URLSearchParams({
-      page: String(page),
-      per_page: String(perPage),
-    });
-    if (month) params.set('month', month);
-    const resp = await fetchAPI(`/transactions?${params.toString()}`);
+    const resp = await fetchAPI(`/transactions?month=${encodeURIComponent(month)}&page=${page}&per_page=${perPage}`);
     const rows = Array.isArray(resp) ? resp : (resp?.data || []);
     all.push(...rows);
     if (rows.length < perPage) break;
@@ -3072,18 +2834,13 @@ async function fetchAllTransactions(month = null) {
   return all;
 }
 
-async function fetchAllAnomalies(month = getSelectedMonthParam()) {
+async function fetchAllAnomalies() {
   const all = [];
   let page = 1;
   const perPage = 200;
 
   while (true) {
-    const params = new URLSearchParams({
-      page: String(page),
-      per_page: String(perPage),
-    });
-    if (month) params.set('month', month);
-    const resp = await fetchAPI(`/anomalies?${params.toString()}`);
+    const resp = await fetchAPI(`/anomalies?page=${page}&per_page=${perPage}`);
     const rows = Array.isArray(resp) ? resp : (resp?.data || []);
     all.push(...rows);
     if (rows.length < perPage) break;
@@ -3212,13 +2969,12 @@ async function renderKPIs() {
 
 async function renderCharts() {
   const month = getSelectedMonthParam();
-  const [byDept, byCat, trend, bud, monthTxns, allTxns] = await Promise.all([
+  const [byDept, byCat, trend, bud, txns] = await Promise.all([
     fetchAPI(`/summary/spend-by-dept?month=${encodeURIComponent(month)}`),
     fetchAPI(`/summary/spend-by-category?month=${encodeURIComponent(month)}`),
     fetchAPI(`/summary/trend?month=${encodeURIComponent(month)}`),
     fetchAPI(`/budgets/utilization?month=${encodeURIComponent(month)}`),
     fetchAllTransactions(month),
-    fetchAllTransactions(),
   ]);
 
   if (byDept) {
@@ -3355,7 +3111,7 @@ async function renderCharts() {
   }
 
   const vendorMap = {};
-  monthTxns.forEach((t) => {
+  txns.forEach((t) => {
     const vendor = t.vendor || 'Unknown';
     vendorMap[vendor] = toNumber(vendorMap[vendor]) + toNumber(t.amount);
   });
@@ -3392,7 +3148,7 @@ async function renderCharts() {
   }
 
   const monthlySpend = {};
-  allTxns.forEach((t) => {
+  txns.forEach((t) => {
     const monthKey = String(t.date || '').slice(0, 7);
     if (!monthKey) return;
     monthlySpend[monthKey] = toNumber(monthlySpend[monthKey]) + toNumber(t.amount);
@@ -3527,7 +3283,7 @@ async function renderTransactions() {
     summaryText.textContent = `${txns.length} transactions · ${getSelectedMonthLabel()}`;
   }
   
-  const topRows = txns;
+  const topRows = txns.slice(0, 25);
   
   topRows.forEach((t) => {
     const reviewStatus = t.review_status || t.status || 'pending';
@@ -3559,7 +3315,7 @@ async function renderTransactions() {
 const GLOBAL_ANOMALIES = [];
 
 async function renderAnomalies() {
-  const anomalies = await fetchAllAnomalies(getSelectedMonthParam());
+  const anomalies = await fetchAllAnomalies();
   
   GLOBAL_ANOMALIES.length = 0;
   GLOBAL_ANOMALIES.push(...anomalies);
@@ -3745,7 +3501,7 @@ async function renderVendorsPage() {
   const [txns, prevTxns, anomalies] = await Promise.all([
     fetchAllTransactions(month),
     fetchAllTransactions(prevMonth),
-    fetchAllAnomalies(month),
+    fetchAllAnomalies(),
   ]);
 
   const currentAgg = {};
@@ -3902,30 +3658,8 @@ async function renderDashboard() {
 }
 window.renderDashboard = renderDashboard;
 
-function normalizeAiButtons() {
-  document.querySelectorAll('.btn-ai').forEach((btn) => {
-    const fallbackLabel = btn.id === 'chat-send-btn' ? 'Send' : 'Ask AI';
-    const existingSpan = btn.querySelector('span');
-    if (!existingSpan) {
-      const label = btn.textContent.trim() || fallbackLabel;
-      btn.textContent = '';
-      const span = document.createElement('span');
-      span.textContent = label;
-      btn.appendChild(span);
-      return;
-    }
-
-    if (!existingSpan.textContent.trim()) {
-      existingSpan.textContent = fallbackLabel;
-    }
-  });
-}
-
 window.addEventListener('DOMContentLoaded', async () => {
   try {
-    syncApiKeyUI();
-    normalizeAiButtons();
-    await hydrateMonthOptions();
     await refreshAllData();
     const monthSelector = document.getElementById('global-period-select');
     if (monthSelector) {
@@ -3935,7 +3669,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (e) {
     console.error('Initial dashboard load failed:', e);
-    showToast(e?.message || 'Initial data load failed.', 'warning');
+    showToast('Initial data load failed. Check API key and backend CORS settings.', 'warning');
   }
 });
 
@@ -4024,7 +3758,6 @@ document.querySelectorAll('.btn-ai').forEach(btn => {
 
             // Refresh UI separately so a dashboard refresh failure doesn't mark upload as failed.
             try {
-              await hydrateMonthOptions();
               await refreshAllData();
             } catch (refreshErr) {
               console.warn('Dashboard refresh failed after successful upload:', refreshErr);
@@ -4206,7 +3939,6 @@ async function submitManualTransaction() {
     await fetchAPI('/transactions', 'POST', payload);
     closeModal('modal-add-txn');
     showToast('Transaction added successfully.', 'success');
-    await hydrateMonthOptions(String(payload.date || '').slice(0, 7));
     await refreshAllData();
     switchPage('dashboard');
   } catch (err) {
@@ -4308,20 +4040,6 @@ async function exportTransactionsCSV() {
   showToast('Transactions CSV exported.', 'success');
 }
 
-async function exportTrendCSV() {
-  const month = getSelectedMonthParam();
-  const trend = await fetchAPI(`/summary/trend?month=${encodeURIComponent(month)}`);
-  const labels = Array.isArray(trend) ? trend.map((row) => row.date) : (trend?.labels || []);
-  const totals = Array.isArray(trend) ? trend.map((row) => toNumber(row.daily_spend)) : (trend?.daily_total || []);
-  const rows = labels.map((date, idx) => ({
-    date,
-    daily_total: toNumber(totals[idx]),
-  }));
-  const csv = toCSV(rows, ['date', 'daily_total']);
-  downloadTextFile(`spend_trend_${month}.csv`, csv, 'text/csv;charset=utf-8');
-  showToast('Trend CSV exported.', 'success');
-}
-
 async function exportBudgetsCSV() {
   const month = getSelectedMonthParam();
   const bud = await fetchAPI(`/budgets/utilization?month=${encodeURIComponent(month)}`);
@@ -4355,8 +4073,7 @@ async function exportVendorsCSV() {
 }
 
 async function exportAnomaliesCSV() {
-  const month = getSelectedMonthParam();
-  const anomalies = await fetchAllAnomalies(month);
+  const anomalies = await fetchAllAnomalies();
   const rows = anomalies.map((a) => {
     const txn = a.transaction || a.transactions || {};
     return {
@@ -4373,7 +4090,7 @@ async function exportAnomaliesCSV() {
     };
   });
   const csv = toCSV(rows, ['severity', 'type', 'title', 'status', 'vendor', 'amount', 'date', 'department', 'payment_method', 'description']);
-  downloadTextFile(`anomalies_${month}.csv`, csv, 'text/csv;charset=utf-8');
+  downloadTextFile(`anomalies_${getSelectedMonthParam()}.csv`, csv, 'text/csv;charset=utf-8');
   showToast('Anomalies CSV exported.', 'success');
 }
 
@@ -4391,46 +4108,6 @@ async function exportDepartmentsCSV() {
   const csv = toCSV(rows, ['department', 'budget', 'spent', 'remaining', 'utilization_pct', 'status']);
   downloadTextFile(`departments_${month}.csv`, csv, 'text/csv;charset=utf-8');
   showToast('Department CSV exported.', 'success');
-}
-
-async function exportSubscriptionsCSV() {
-  const month = getSelectedMonthParam();
-  const txns = await fetchAllTransactions(month);
-  const rowsByVendor = {};
-  txns
-    .filter((txn) => (txn.category || '').toLowerCase() === 'software')
-    .forEach((txn) => {
-      const vendor = txn.vendor || 'Unknown';
-      if (!rowsByVendor[vendor]) {
-        rowsByVendor[vendor] = {
-          vendor,
-          department: txn.department || '-',
-          monthly_cost: 0,
-          invoices: 0,
-          latest_date: txn.date || '',
-        };
-      }
-      rowsByVendor[vendor].monthly_cost += toNumber(txn.amount);
-      rowsByVendor[vendor].invoices += 1;
-      if ((txn.date || '') > rowsByVendor[vendor].latest_date) {
-        rowsByVendor[vendor].latest_date = txn.date || '';
-      }
-    });
-
-  const rows = Object.values(rowsByVendor)
-    .sort((a, b) => b.monthly_cost - a.monthly_cost)
-    .map((row) => ({
-      vendor: row.vendor,
-      department: row.department,
-      monthly_cost: row.monthly_cost,
-      annual_cost: row.monthly_cost * 12,
-      invoices: row.invoices,
-      latest_date: row.latest_date,
-    }));
-
-  const csv = toCSV(rows, ['vendor', 'department', 'monthly_cost', 'annual_cost', 'invoices', 'latest_date']);
-  downloadTextFile(`subscriptions_${month}.csv`, csv, 'text/csv;charset=utf-8');
-  showToast('Subscriptions CSV exported.', 'success');
 }
 
 async function exportReportsCSV() {
@@ -4471,54 +4148,20 @@ document.querySelectorAll('#page-settings .btn-primary').forEach((btn) => {
   if (btn.textContent.trim() === 'Save changes') btn.addEventListener('click', () => showToast('Settings saved successfully', 'success'));
 });
 
-document.getElementById('settings-api-save-btn')?.addEventListener('click', async (e) => {
-  e.preventDefault();
-  await saveApiKeyFromSettings();
-});
-
-document.getElementById('settings-api-clear-btn')?.addEventListener('click', (e) => {
-  e.preventDefault();
-  clearStoredApiKey();
-});
-
-document.getElementById('api-key-modal-save-btn')?.addEventListener('click', async (e) => {
-  e.preventDefault();
-  await saveApiKeyFromPrompt();
-});
-
-document.getElementById('settings-api-key')?.addEventListener('keydown', async (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    await saveApiKeyFromSettings();
-  }
-});
-
-document.getElementById('api-key-modal-input')?.addEventListener('keydown', async (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    await saveApiKeyFromPrompt();
-  }
-  if (e.key === 'Escape') {
-    e.preventDefault();
-    cancelApiKeyPrompt();
-  }
-});
-
-function bindAsyncClick(elementId, handler) {
-  document.getElementById(elementId)?.addEventListener('click', (e) => {
-    e.preventDefault();
-    handler().catch((err) => showToast(err.message, 'error'));
-  });
-}
-
 // Export bindings
-bindAsyncClick('transactions-export-csv-btn', exportTransactionsCSV);
-bindAsyncClick('dashboard-trend-export-csv-btn', exportTrendCSV);
-bindAsyncClick('subscriptions-export-btn', exportSubscriptionsCSV);
-bindAsyncClick('budgets-export-btn', exportBudgetsCSV);
-bindAsyncClick('vendors-export-btn', exportVendorsCSV);
-bindAsyncClick('reports-export-pdf-btn', exportReportsPDF);
-bindAsyncClick('reports-export-csv-btn', exportReportsCSV);
+document.querySelector('#page-transactions .btn')?.addEventListener('click', (e) => {
+  if (e.currentTarget?.textContent?.includes('Export CSV')) exportTransactionsCSV().catch((err) => showToast(err.message, 'error'));
+});
+document.querySelector('#page-budgets .section-actions .btn')?.addEventListener('click', () => exportBudgetsCSV().catch((err) => showToast(err.message, 'error')));
+document.querySelector('#page-vendors .section-actions .btn')?.addEventListener('click', () => exportVendorsCSV().catch((err) => showToast(err.message, 'error')));
+document.querySelector('#page-reports .section-actions .btn')?.addEventListener('click', () => exportReportsPDF().catch((err) => showToast(err.message, 'error')));
+document.querySelectorAll('#page-reports .section-actions .btn')[1]?.addEventListener('click', () => exportReportsCSV().catch((err) => showToast(err.message, 'error')));
+document.querySelectorAll('#page-reports .card .btn-sm.btn-primary').forEach((btn) => {
+  if (btn.textContent.includes('Export PDF')) btn.addEventListener('click', () => exportReportsPDF().catch((err) => showToast(err.message, 'error')));
+});
+document.querySelectorAll('#page-reports .card .btn-sm').forEach((btn) => {
+  if (btn.textContent.trim() === 'CSV') btn.addEventListener('click', () => exportReportsCSV().catch((err) => showToast(err.message, 'error')));
+});
 document.querySelector('#page-anomalies .section-actions .btn')?.addEventListener('click', () => showToast('Bulk review action queued.', 'info'));
 
 // Keep anomaly page controls responsive for demo
